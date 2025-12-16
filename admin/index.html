@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Admin Panel - an Irrase Experience</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js'></script>
+    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css' type='text/css' />
+    
+    <style>
+        :root { --primary: #ffffff; --secondary: #000000; --accent: #0070f3; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6; }
+        body { font-family: 'Inter', sans-serif; background: #000; color: white; }
+        .vercel-card { background: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; }
+        .vercel-button { background: #fff; color: #000; transition: all 0.2s; font-weight: 500; border-radius: 8px; }
+        .vercel-button:hover { background: rgba(255,255,255,0.9); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
+        .vercel-button-secondary { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 8px; }
+        .vercel-button-secondary:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); }
+        .danger-button { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; border-radius: 8px; }
+        .danger-button:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); transform: translateY(-1px); }
+        .status-pending { border-left: 3px solid var(--warning); background: linear-gradient(to right, rgba(245, 158, 11, 0.1), transparent); }
+        .status-approved { border-left: 3px solid var(--success); background: linear-gradient(to right, rgba(16, 185, 129, 0.1), transparent); }
+        .status-rejected { border-left: 3px solid var(--danger); background: linear-gradient(to right, rgba(239, 68, 68, 0.1), transparent); }
+        .status-flagged { border-left: 3px solid #f97316; background: linear-gradient(to right, rgba(249, 115, 22, 0.1), transparent); }
+        .sidebar-active { background: rgba(255,255,255,0.1); border-left: 3px solid white; }
+        .stat-card { background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); transition: all 0.3s; }
+        .stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .badge-pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .badge-approved { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .badge-rejected { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .badge-flagged { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <!-- Admin Login -->
+    <div id="adminLogin" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md space-y-8 animate-fadeIn">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold mb-2">AN IRRASE EXPERIENCE</h1>
+                <p class="text-gray-400">Admin Panel</p>
+            </div>
+            
+            <div class="vercel-card p-8">
+                <div id="loginError" class="hidden bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6"></div>
+                
+                <h2 class="text-xl font-semibold mb-6">Admin Sign In</h2>
+                <form onsubmit="adminLogin(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Email</label>
+                            <input type="email" id="adminEmail" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-colors" placeholder="admin@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Password</label>
+                            <input type="password" id="adminPassword" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-colors" placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="w-full h-12 rounded-xl vercel-button font-medium">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In as Admin
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center mt-6">
+                    <button onclick="window.location.href='player.html'" class="text-sm text-gray-400 hover:text-white">
+                        <i class="fas fa-arrow-left mr-2"></i>Go to Player App
+                    </button>
+                </div>
+            </div>
+            
+            <div class="vercel-card p-6">
+                <h3 class="text-sm font-semibold text-gray-400 mb-2">Create Admin Account</h3>
+                <p class="text-sm text-gray-400 mb-3">Use this to create your first admin account. After creation, you'll need to grant admin privileges in Supabase.</p>
+                <button onclick="createAdminAccount()" class="w-full h-10 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-sm font-medium">
+                    <i class="fas fa-user-shield mr-2"></i>Create Admin Account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="hidden min-h-screen">
+        <!-- Desktop Sidebar -->
+        <div class="hidden lg:block fixed left-0 top-0 bottom-0 w-64 bg-black/90 border-r border-white/10 z-40">
+            <div class="p-6 border-b border-white/10">
+                <h2 class="text-xl font-bold">AN IRRASE EXPERIENCE</h2>
+                <p class="text-sm text-gray-400 mt-1">Admin Panel</p>
+            </div>
+            
+            <div class="p-4">
+                <div class="flex items-center gap-3 mb-6 p-3 rounded-xl bg-white/5">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                        <i class="fas fa-crown text-purple-400"></i>
+                    </div>
+                    <div>
+                        <div class="font-medium" id="adminName">Admin User</div>
+                        <div class="text-xs text-gray-400">Administrator</div>
+                    </div>
+                </div>
+                
+                <nav class="space-y-1">
+                    <button onclick="loadAdminPage('dashboard')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 sidebar-nav" data-page="dashboard">
+                        <i class="fas fa-chart-bar w-5"></i> Dashboard
+                    </button>
+                    <button onclick="loadAdminPage('submissions')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 sidebar-nav" data-page="submissions">
+                        <i class="fas fa-clipboard-check w-5"></i> Submissions
+                        <span id="pendingCountBadge" class="ml-auto badge badge-pending hidden">0</span>
+                    </button>
+                    <button onclick="loadAdminPage('zones')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 sidebar-nav" data-page="zones">
+                        <i class="fas fa-map-marked-alt w-5"></i> Zones
+                    </button>
+                    <button onclick="loadAdminPage('missions')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 sidebar-nav" data-page="missions">
+                        <i class="fas fa-tasks w-5"></i> Missions
+                    </button>
+                    <button onclick="loadAdminPage('users')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 sidebar-nav" data-page="users">
+                        <i class="fas fa-users w-5"></i> Users
+                    </button>
+                    <button onclick="loadAdminPage('shop')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 sidebar-nav" data-page="shop">
+                        <i class="fas fa-shopping-cart w-5"></i> Shop
+                    </button>
+                    <button onclick="loadAdminPage('sos')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 sidebar-nav" data-page="sos">
+                        <i class="fas fa-exclamation-triangle w-5"></i> SOS Alerts
+                    </button>
+                </nav>
+                
+                <div class="absolute bottom-4 left-4 right-4">
+                    <button onclick="adminLogout()" class="w-full h-12 rounded-xl vercel-button-secondary font-medium">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Header -->
+        <div class="lg:hidden fixed top-0 left-0 right-0 h-16 bg-black/90 backdrop-blur-xl border-b border-white/10 z-30">
+            <div class="h-full px-4 flex items-center justify-between">
+                <button onclick="toggleMobileMenu()" class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-lg font-bold">Admin Panel</h2>
+                <button onclick="adminLogout()" class="text-sm text-gray-400 hover:text-white">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="lg:hidden fixed top-16 left-0 right-0 bg-black/95 backdrop-blur-xl border-b border-white/10 z-40 hidden">
+            <div class="p-4 space-y-1">
+                <button onclick="loadAdminPage('dashboard')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3">
+                    <i class="fas fa-chart-bar w-5"></i> Dashboard
+                </button>
+                <button onclick="loadAdminPage('submissions')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3">
+                    <i class="fas fa-clipboard-check w-5"></i> Submissions
+                    <span id="mobilePendingCount" class="ml-auto badge badge-pending hidden">0</span>
+                </button>
+                <button onclick="loadAdminPage('zones')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3">
+                    <i class="fas fa-map-marked-alt w-5"></i> Zones
+                </button>
+                <button onclick="loadAdminPage('missions')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3">
+                    <i class="fas fa-tasks w-5"></i> Missions
+                </button>
+                <button onclick="loadAdminPage('users')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3">
+                    <i class="fas fa-users w-5"></i> Users
+                </button>
+                <button onclick="loadAdminPage('shop')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3">
+                    <i class="fas fa-shopping-cart w-5"></i> Shop
+                </button>
+                <button onclick="loadAdminPage('sos')" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3">
+                    <i class="fas fa-exclamation-triangle w-5"></i> SOS Alerts
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <main class="lg:ml-64 pt-16 lg:pt-0 min-h-screen">
+            <div id="adminContent" class="p-4 lg:p-6">
+                <!-- Dashboard will load here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Submission Detail Modal -->
+    <div id="submissionDetailModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="vercel-card max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold">Submission Details</h3>
+                        <button onclick="closeSubmissionModal()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="submissionDetailContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="createEditModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="vercel-card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold" id="createEditTitle">Create Item</h3>
+                        <button onclick="closeCreateEditModal()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="createEditContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-2"></div>
+
+    <script>
+        // ============================
+        // CONFIGURATION - YOUR CREDENTIALS
+        // ============================
+        const SUPABASE_URL = 'https://wllpidtujqnfohpsfqyy.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_9lIP3MDWOz2_Udkrhx4tjw_cpFkyuRa';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        mapboxgl.accessToken = 'pk.eyJ1IjoianVzYSIsImEiOiJjbTZnc2Y0a2swNHFuMmxwbzBxYm80aTh3In0.RHyfezw9C01ZXlgOiymD0Q';
+        
+        // ============================
+        // GLOBAL STATE
+        // ============================
+        let currentAdmin = null;
+        let currentPage = 'dashboard';
+        let map = null;
+        let draw = null;
+        let submissions = [];
+        let zones = [];
+        let missions = [];
+        let users = [];
+        let prizes = [];
+        let sosAlerts = [];
+        let currentSubmission = null;
+        let currentItem = null;
+        let currentItemType = null;
+        
+        // ============================
+        // INITIALIZATION
+        // ============================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAdminAuth();
+            setupEventListeners();
+        });
+        
+        // ============================
+        // ADMIN AUTHENTICATION
+        // ============================
+        async function checkAdminAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                currentAdmin = session.user;
+                const isAdmin = await verifyAdminRole();
+                if (isAdmin) {
+                    showAdminDashboard();
+                } else {
+                    // Redirect to player if not admin
+                    window.location.href = 'player.html';
+                }
+            }
+        }
+        
+        async function verifyAdminRole() {
+            try {
+                const { data: user, error } = await supabase
+                    .from('users')
+                    .select('is_admin, name')
+                    .eq('id', currentAdmin.id)
+                    .single();
+                
+                if (error) {
+                    // User might not exist in users table yet
+                    return false;
+                }
+                
+                if (!user || !user.is_admin) {
+                    return false;
+                }
+                
+                document.getElementById('adminName').textContent = user.name || 'Admin';
+                return true;
+            } catch (error) {
+                console.error('Error verifying admin role:', error);
+                return false;
+            }
+        }
+        
+        async function adminLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                currentAdmin = data.user;
+                const isAdmin = await verifyAdminRole();
+                if (isAdmin) {
+                    showAdminDashboard();
+                    showToast('Welcome to Admin Panel!', 'success');
+                } else {
+                    showToast('This account does not have admin privileges.', 'error');
+                    await supabase.auth.signOut();
+                }
+            } catch (error) {
+                document.getElementById('loginError').textContent = error.message;
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+        
+        async function createAdminAccount() {
+            try {
+                const email = 'admin@example.com';
+                const password = '1234567';
+                
+                // Sign up admin account
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: { name: 'Admin User' }
+                    }
+                });
+                
+                if (authError) throw authError;
+                
+                // Create user profile with admin privileges
+                const { error: profileError } = await supabase.from('users').insert([{
+                    id: authData.user.id,
+                    email,
+                    name: 'Admin User',
+                    coins: 1000,
+                    is_admin: true
+                }]);
+                
+                if (profileError) {
+                    // Try updating if user exists
+                    await supabase
+                        .from('users')
+                        .update({ is_admin: true })
+                        .eq('email', email);
+                }
+                
+                showToast('Admin account created! You can now log in.', 'success');
+                
+                // Auto fill login form
+                document.getElementById('adminEmail').value = email;
+                document.getElementById('adminPassword').value = password;
+                
+            } catch (error) {
+                showToast('Error creating admin account: ' + error.message, 'error');
+            }
+        }
+        
+        async function adminLogout() {
+            await supabase.auth.signOut();
+            window.location.reload();
+        }
+        
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+        
+        // ============================
+        // ADMIN DASHBOARD
+        // ============================
+        function showAdminDashboard() {
+            document.getElementById('adminLogin').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            loadAdminPage('dashboard');
+        }
+        
+        async function loadAdminPage(page) {
+            currentPage = page;
+            document.querySelectorAll('.sidebar-nav').forEach(item => {
+                if (item.dataset.page === page) {
+                    item.classList.add('sidebar-active');
+                } else {
+                    item.classList.remove('sidebar-active');
+                }
+            });
+            document.getElementById('mobileMenu').classList.add('hidden');
+            
+            switch(page) {
+                case 'dashboard': await loadDashboard(); break;
+                case 'submissions': await loadSubmissions(); break;
+                case 'zones': await loadZones(); break;
+                case 'missions': await loadMissions(); break;
+                case 'users': await loadUsers(); break;
+                case 'shop': await loadShop(); break;
+                case 'sos': await loadSOS(); break;
+            }
+        }
+        
+        // ============================
+        // DASHBOARD
+        // ============================
+        async function loadDashboard() {
+            document.getElementById('adminContent').innerHTML = `
+                <div class="space-y-6">
+                    <div>
+                        <h1 class="text-2xl font-bold mb-2">Admin Dashboard</h1>
+                        <p class="text-gray-400">Real-time overview of the Experience</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="dashboardStats">
+                        <div class="stat-card rounded-2xl p-6 skeleton"><div class="h-20"></div></div>
+                        <div class="stat-card rounded-2xl p-6 skeleton"><div class="h-20"></div></div>
+                        <div class="stat-card rounded-2xl p-6 skeleton"><div class="h-20"></div></div>
+                        <div class="stat-card rounded-2xl p-6 skeleton"><div class="h-20"></div></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="vercel-card rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold">Recent Submissions</h3>
+                                <button onclick="loadAdminPage('submissions')" class="text-sm text-gray-400 hover:text-white">View All <i class="fas fa-arrow-right ml-1"></i></button>
+                            </div>
+                            <div id="recentSubmissions" class="space-y-3 max-h-[300px] overflow-y-auto">
+                                <div class="space-y-2">${Array(3).fill().map(() => `<div class="h-16 bg-white/5 rounded-xl"></div>`).join('')}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="vercel-card rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold">System Status</h3>
+                                <button onclick="refreshStats()" class="text-sm text-gray-400 hover:text-white"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                            <div id="systemStatus" class="space-y-3">
+                                <div class="space-y-2">${Array(4).fill().map(() => `<div class="h-12 bg-white/5 rounded-xl"></div>`).join('')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="vercel-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold">Quick Actions</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <button onclick="createNewZone()" class="h-12 rounded-xl vercel-button-secondary flex items-center justify-center gap-2">
+                                <i class="fas fa-map-marker-alt"></i> New Zone
+                            </button>
+                            <button onclick="createNewMission()" class="h-12 rounded-xl vercel-button-secondary flex items-center justify-center gap-2">
+                                <i class="fas fa-tasks"></i> New Mission
+                            </button>
+                            <button onclick="createNewPrize()" class="h-12 rounded-xl vercel-button-secondary flex items-center justify-center gap-2">
+                                <i class="fas fa-gift"></i> New Prize
+                            </button>
+                            <button onclick="loadAdminPage('submissions')" class="h-12 rounded-xl vercel-button flex items-center justify-center gap-2">
+                                <i class="fas fa-clipboard-check"></i> Review Submissions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            await loadDashboardStats();
+            await loadRecentSubmissions();
+            await loadSystemStatus();
+        }
+        
+        async function loadDashboardStats() {
+            try {
+                const [pendingSubs, totalUsers, activeMissions, activeSOS] = await Promise.all([
+                    supabase.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+                    supabase.from('users').select('*', { count: 'exact', head: true }),
+                    supabase.from('missions').select('*', { count: 'exact', head: true }).eq('active', true),
+                    supabase.from('sos_alerts').select('*', { count: 'exact', head: true }).eq('status', 'active')
+                ]);
+                
+                const stats = [
+                    { title: 'Pending Submissions', value: pendingSubs.count || 0, icon: 'fas fa-clipboard-check', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20' },
+                    { title: 'Total Players', value: totalUsers.count || 0, icon: 'fas fa-users', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+                    { title: 'Active Missions', value: activeMissions.count || 0, icon: 'fas fa-tasks', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+                    { title: 'Active SOS Alerts', value: activeSOS.count || 0, icon: 'fas fa-exclamation-triangle', color: 'text-red-400', bgColor: 'bg-red-500/20' }
+                ];
+                
+                document.getElementById('dashboardStats').innerHTML = stats.map(stat => `
+                    <div class="stat-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center text-2xl ${stat.color}">
+                                <i class="${stat.icon}"></i>
+                            </div>
+                            <div class="text-3xl font-bold ${stat.color}">${stat.value}</div>
+                        </div>
+                        <div class="text-sm text-gray-400">${stat.title}</div>
+                    </div>
+                `).join('');
+                
+                // Update pending count badge
+                const badge = document.getElementById('pendingCountBadge');
+                const mobileBadge = document.getElementById('mobilePendingCount');
+                if (pendingSubs.count > 0) {
+                    badge.textContent = pendingSubs.count;
+                    mobileBadge.textContent = pendingSubs.count;
+                    badge.classList.remove('hidden');
+                    mobileBadge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                    mobileBadge.classList.add('hidden');
+                }
+                
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadRecentSubmissions() {
+            try {
+                const { data, error } = await supabase
+                    .from('submissions')
+                    .select(`
+                        *,
+                        user:user_id (name),
+                        mission:mission_id (title)
+                    `)
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                const container = document.getElementById('recentSubmissions');
+                if (error || !data || data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-400 py-8">No pending submissions</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.map(sub => `
+                    <div class="p-3 rounded-xl status-pending">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">${sub.user?.name || 'Unknown'}</div>
+                                <div class="text-xs text-gray-400">${sub.mission?.title || 'Unknown Mission'}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm">${formatTimeAgo(sub.created_at)}</div>
+                                <button onclick="viewSubmission('${sub.id}')" class="text-xs text-blue-400 hover:text-blue-300 mt-1">
+                                    Review →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading submissions:', error);
+            }
+        }
+        
+        async function loadSystemStatus() {
+            const status = document.getElementById('systemStatus');
+            status.innerHTML = `
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-database text-green-400"></i>
+                        <div>
+                            <div class="font-medium">Database</div>
+                            <div class="text-xs text-gray-400">Connected</div>
+                        </div>
+                    </div>
+                    <span class="text-green-400 text-sm">✓ Online</span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-map text-green-400"></i>
+                        <div>
+                            <div class="font-medium">Map Service</div>
+                            <div class="text-xs text-gray-400">Mapbox</div>
+                        </div>
+                    </div>
+                    <span class="text-green-400 text-sm">✓ Online</span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-storage text-green-400"></i>
+                        <div>
+                            <div class="font-medium">Storage</div>
+                            <div class="text-xs text-gray-400">File uploads</div>
+                        </div>
+                    </div>
+                    <span class="text-green-400 text-sm">✓ Online</span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-bell text-green-400"></i>
+                        <div>
+                            <div class="font-medium">Notifications</div>
+                            <div class="text-xs text-gray-400">Real-time</div>
+                        </div>
+                    </div>
+                    <span class="text-green-400 text-sm">✓ Online</span>
+                </div>
+            `;
+        }
+        
+        function refreshStats() {
+            loadDashboardStats();
+            loadRecentSubmissions();
+            showToast('Stats refreshed', 'success');
+        }
+        
+        // ============================
+        // SUBMISSIONS MANAGEMENT
+        // ============================
+        async function loadSubmissions() {
+            document.getElementById('adminContent').innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold mb-2">Submissions Review</h1>
+                            <p class="text-gray-400">Verify player mission submissions</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <select id="statusFilter" onchange="filterSubmissions()" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm">
+                                <option value="all">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button onclick="filterSubmissions('all')" class="px-4 py-2 rounded-full bg-white/10 text-sm hover:bg-white/20">All</button>
+                        <button onclick="filterSubmissions('pending')" class="px-4 py-2 rounded-full bg-yellow-500/20 text-yellow-400 text-sm hover:bg-yellow-500/30">Pending</button>
+                        <button onclick="filterSubmissions('approved')" class="px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm hover:bg-green-500/30">Approved</button>
+                        <button onclick="filterSubmissions('rejected')" class="px-4 py-2 rounded-full bg-red-500/20 text-red-400 text-sm hover:bg-red-500/30">Rejected</button>
+                    </div>
+                    
+                    <div id="submissionsGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="col-span-2">${Array(4).fill().map(() => `<div class="h-40 bg-white/5 rounded-2xl mb-4 skeleton"></div>`).join('')}</div>
+                    </div>
+                </div>
+            `;
+            
+            await loadSubmissionsData();
+        }
+        
+        async function loadSubmissionsData(status = 'all') {
+            try {
+                let query = supabase
+                    .from('submissions')
+                    .select(`
+                        *,
+                        user:user_id (name, email, team_name),
+                        mission:mission_id (title, points)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (status !== 'all') {
+                    query = query.eq('status', status);
+                }
+                
+                const { data, error } = await query;
+                if (error) throw error;
+                submissions = data || [];
+                displaySubmissions(submissions);
+                
+            } catch (error) {
+                console.error('Error loading submissions:', error);
+                showToast('Error loading submissions', 'error');
+            }
+        }
+        
+        function displaySubmissions(submissionsList) {
+            const container = document.getElementById('submissionsGrid');
+            if (!submissionsList || submissionsList.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-2 vercel-card rounded-2xl p-12 text-center">
+                        <i class="fas fa-inbox text-4xl mb-4 text-gray-400"></i>
+                        <h3 class="text-xl font-semibold mb-2">No submissions</h3>
+                        <p class="text-gray-400">No submissions match your filters</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = submissionsList.map(sub => {
+                const statusClass = `status-${sub.status}`;
+                const badgeClass = `badge-${sub.status}`;
+                
+                return `
+                    <div class="vercel-card rounded-2xl p-4 ${statusClass}">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-medium">${sub.user?.name || 'Unknown'}</div>
+                                <div class="text-sm text-gray-400">${sub.user?.team_name || 'No Team'}</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="badge ${badgeClass}">${sub.status}</span>
+                                <div class="text-xs text-gray-400 mt-1">${formatTimeAgo(sub.created_at)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="font-semibold mb-1">${sub.mission?.title || 'Unknown Mission'}</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs bg-white/10 px-2 py-0.5 rounded-full">
+                                    <i class="fas fa-coins mr-1"></i>${sub.mission?.points || 0}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        ${sub.media_url ? `
+                            <div class="mb-4 aspect-video rounded-xl overflow-hidden bg-black/50 cursor-pointer" onclick="viewSubmission('${sub.id}')">
+                                <div class="w-full h-full flex items-center justify-center text-4xl">
+                                    ${sub.media_url.includes('video') ? '<i class="fas fa-video"></i>' : '<i class="fas fa-image"></i>'}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex gap-2">
+                            <button onclick="viewSubmission('${sub.id}')" class="flex-1 h-10 rounded-xl vercel-button-secondary text-sm">
+                                <i class="fas fa-eye mr-1"></i>Review
+                            </button>
+                            ${sub.status === 'pending' ? `
+                                <button onclick="approveSubmission('${sub.id}')" class="h-10 px-4 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button onclick="rejectSubmission('${sub.id}')" class="h-10 px-4 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 text-sm">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function viewSubmission(submissionId) {
+            try {
+                const { data, error } = await supabase
+                    .from('submissions')
+                    .select(`
+                        *,
+                        user:user_id (id, name, email, team_name, coins),
+                        mission:mission_id (id, title, description, points, instructions)
+                    `)
+                    .eq('id', submissionId)
+                    .single();
+                
+                if (error) throw error;
+                currentSubmission = data;
+                
+                document.getElementById('submissionDetailContent').innerHTML = `
+                    <div class="space-y-6">
+                        <div class="vercel-card rounded-xl p-4">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                                    <i class="fas fa-user text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-lg">${currentSubmission.user?.name || 'Unknown'}</h4>
+                                    <p class="text-sm text-gray-400">${currentSubmission.user?.email || 'No email'}</p>
+                                    <p class="text-sm text-gray-400">Team: ${currentSubmission.user?.team_name || 'No Team'}</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold flex items-center gap-1">
+                                        <i class="fas fa-coins text-yellow-400"></i>${currentSubmission.user?.coins || 0}
+                                    </div>
+                                    <div class="text-xs text-gray-400">coins</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="vercel-card rounded-xl p-4">
+                            <h4 class="font-semibold text-lg mb-2">Mission Details</h4>
+                            <div class="space-y-2">
+                                <div>
+                                    <div class="text-sm text-gray-400">Mission</div>
+                                    <div class="font-medium">${currentSubmission.mission?.title || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-400">Description</div>
+                                    <div class="text-gray-300">${currentSubmission.mission?.description || 'No description'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-400">Reward</div>
+                                    <div class="font-bold flex items-center gap-1">
+                                        <i class="fas fa-coins text-yellow-400"></i>${currentSubmission.mission?.points || 0} coins
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="vercel-card rounded-xl p-4">
+                            <h4 class="font-semibold text-lg mb-4">Submission Media</h4>
+                            ${currentSubmission.media_url ? `
+                                <div class="aspect-video rounded-xl overflow-hidden bg-black mb-4">
+                                    ${currentSubmission.media_url.includes('video') ? `
+                                        <video controls class="w-full h-full">
+                                            <source src="${currentSubmission.media_url}" type="video/mp4">
+                                        </video>
+                                    ` : `
+                                        <img src="${currentSubmission.media_url}" class="w-full h-full object-contain" alt="Submission">
+                                    `}
+                                </div>
+                            ` : '<div class="text-center text-gray-400 py-8">No media submitted</div>'}
+                        </div>
+                        
+                        ${currentSubmission.status === 'pending' ? `
+                            <div class="vercel-card rounded-xl p-4">
+                                <h4 class="font-semibold text-lg mb-4">Verification Actions</h4>
+                                <div class="space-y-3">
+                                    <div class="flex gap-3">
+                                        <button onclick="approveSubmission('${currentSubmission.id}', true)" class="flex-1 h-12 rounded-xl bg-green-500 hover:bg-green-600 font-medium">
+                                            <i class="fas fa-check mr-2"></i>Approve
+                                        </button>
+                                        <button onclick="rejectSubmission('${currentSubmission.id}', true)" class="flex-1 h-12 rounded-xl bg-red-500 hover:bg-red-600 font-medium">
+                                            <i class="fas fa-times mr-2"></i>Reject
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-400 mb-2">Admin Notes</label>
+                                        <textarea id="adminNotes" placeholder="Add notes..." class="w-full h-24 rounded-xl bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-white/30"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="vercel-card rounded-xl p-4">
+                                <div class="text-center py-4">
+                                    <div class="text-lg font-medium mb-2">
+                                        Submission ${currentSubmission.status}
+                                    </div>
+                                    <div class="text-gray-400">
+                                        ${currentSubmission.admin_notes ? `Notes: ${currentSubmission.admin_notes}` : 'No notes'}
+                                    </div>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+                `;
+                
+                document.getElementById('submissionDetailModal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error viewing submission:', error);
+                showToast('Error loading submission', 'error');
+            }
+        }
+        
+        async function approveSubmission(submissionId, fromModal = false) {
+            try {
+                await supabase
+                    .from('submissions')
+                    .update({
+                        status: 'approved',
+                        verified_by: currentAdmin.id,
+                        verified_at: new Date().toISOString(),
+                        admin_notes: document.getElementById('adminNotes')?.value || null
+                    })
+                    .eq('id', submissionId);
+                
+                // Award coins to user
+                const submission = submissions.find(s => s.id === submissionId);
+                if (submission) {
+                    const user = await supabase
+                        .from('users')
+                        .select('coins')
+                        .eq('id', submission.user_id)
+                        .single();
+                    
+                    if (user.data) {
+                        const newCoins = user.data.coins + (submission.mission?.points || 100);
+                        await supabase
+                            .from('users')
+                            .update({ coins: newCoins })
+                            .eq('id', submission.user_id);
+                    }
+                    
+                    // Update user mission status
+                    await supabase
+                        .from('user_missions')
+                        .update({ status: 'completed', completed_at: new Date().toISOString() })
+                        .eq('user_id', submission.user_id)
+                        .eq('mission_id', submission.mission_id);
+                }
+                
+                if (fromModal) closeSubmissionModal();
+                loadSubmissionsData();
+                showToast('Submission approved!', 'success');
+                
+            } catch (error) {
+                console.error('Error approving submission:', error);
+                showToast('Error approving submission', 'error');
+            }
+        }
+        
+        async function rejectSubmission(submissionId, fromModal = false) {
+            try {
+                await supabase
+                    .from('submissions')
+                    .update({
+                        status: 'rejected',
+                        verified_by: currentAdmin.id,
+                        verified_at: new Date().toISOString(),
+                        admin_notes: document.getElementById('adminNotes')?.value || 'Rejected by admin'
+                    })
+                    .eq('id', submissionId);
+                
+                if (fromModal) closeSubmissionModal();
+                loadSubmissionsData();
+                showToast('Submission rejected', 'success');
+                
+            } catch (error) {
+                console.error('Error rejecting submission:', error);
+                showToast('Error rejecting submission', 'error');
+            }
+        }
+        
+        function filterSubmissions(status = 'all') {
+            const filtered = status === 'all' ? submissions : submissions.filter(s => s.status === status);
+            displaySubmissions(filtered);
+        }
+        
+        function closeSubmissionModal() {
+            document.getElementById('submissionDetailModal').classList.add('hidden');
+            currentSubmission = null;
+        }
+        
+        // ============================
+        // ZONES MANAGEMENT
+        // ============================
+        async function loadZones() {
+            document.getElementById('adminContent').innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold mb-2">Zone Management</h1>
+                            <p class="text-gray-400">Create and manage game zones</p>
+                        </div>
+                        <button onclick="createNewZone()" class="h-12 px-6 rounded-xl vercel-button font-medium">
+                            <i class="fas fa-plus mr-2"></i>New Zone
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2">
+                            <div class="vercel-card rounded-2xl overflow-hidden">
+                                <div id="zoneMap" class="w-full h-[500px]"></div>
+                            </div>
+                            <div class="mt-4 text-sm text-gray-400 flex items-center gap-2">
+                                <i class="fas fa-info-circle"></i>
+                                Draw zones on the map, then fill in details in the form
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-semibold">Existing Zones</h3>
+                            <div id="zonesList" class="space-y-3">
+                                <div class="space-y-2">${Array(3).fill().map(() => `<div class="h-20 bg-white/5 rounded-xl skeleton"></div>`).join('')}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            await loadZonesData();
+            initializeZoneMap();
+        }
+        
+        async function loadZonesData() {
+            try {
+                const { data, error } = await supabase.from('zones').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                zones = data || [];
+                displayZonesList();
+            } catch (error) {
+                console.error('Error loading zones:', error);
+                zones = [];
+                displayZonesList();
+            }
+        }
+        
+        function displayZonesList() {
+            const container = document.getElementById('zonesList');
+            if (!zones || zones.length === 0) {
+                container.innerHTML = `
+                    <div class="vercel-card rounded-xl p-6 text-center">
+                        <i class="fas fa-map text-4xl mb-4 text-gray-400"></i>
+                        <h3 class="font-semibold mb-2">No Zones Yet</h3>
+                        <p class="text-sm text-gray-400">Create your first zone by drawing on the map</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = zones.map(zone => `
+                <div class="vercel-card rounded-xl p-4 cursor-pointer hover:bg-white/10 transition-colors" onclick="editZone('${zone.id}')">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-semibold">${zone.name}</h4>
+                                <span class="badge ${zone.active ? 'badge-approved' : 'badge-pending'}">
+                                    ${zone.active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-400 line-clamp-2">${zone.description || 'No description'}</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="text-xs bg-white/10 px-2 py-0.5 rounded-full">Radius: ${zone.radius_meters}m</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400 mt-1"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function initializeZoneMap() {
+            map = new mapboxgl.Map({
+                container: 'zoneMap',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: [-122.4194, 37.7749],
+                zoom: 13
+            });
+            
+            map.addControl(new mapboxgl.NavigationControl());
+            
+            draw = new MapboxDraw({
+                displayControlsDefault: false,
+                controls: {
+                    polygon: true,
+                    trash: true
+                }
+            });
+            
+            map.addControl(draw, 'top-left');
+            
+            map.on('load', () => {
+                zones.forEach(zone => {
+                    if (zone.coordinates) {
+                        map.addSource(`zone-${zone.id}`, {
+                            type: 'geojson',
+                            data: {
+                                type: 'Feature',
+                                geometry: zone.coordinates
+                            }
+                        });
+                        
+                        map.addLayer({
+                            id: `zone-fill-${zone.id}`,
+                            type: 'fill',
+                            source: `zone-${zone.id}`,
+                            paint: {
+                                'fill-color': zone.active ? '#3b82f6' : '#6b7280',
+                                'fill-opacity': 0.2
+                            }
+                        });
+                        
+                        map.addLayer({
+                            id: `zone-outline-${zone.id}`,
+                            type: 'line',
+                            source: `zone-${zone.id}`,
+                            paint: {
+                                'line-color': zone.active ? '#3b82f6' : '#6b7280',
+                                'line-width': 2
+                            }
+                        });
+                    }
+                });
+            });
+        }
+        
+        function createNewZone() {
+            currentItem = null;
+            currentItemType = 'zone';
+            
+            document.getElementById('createEditTitle').textContent = 'Create New Zone';
+            document.getElementById('createEditContent').innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Zone Name *</label>
+                        <input type="text" id="zoneName" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Description</label>
+                        <textarea id="zoneDescription" rows="3" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-white/30"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Radius (meters)</label>
+                        <input type="number" id="zoneRadius" min="10" max="5000" value="100" class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30">
+                    </div>
+                    
+                    <div class="vercel-card rounded-xl p-4">
+                        <div class="text-sm text-gray-400 mb-2 flex items-center gap-2">
+                            <i class="fas fa-map"></i>Map Instructions
+                        </div>
+                        <div class="text-sm space-y-1">
+                            <p>1. Draw a polygon on the map in admin zones page</p>
+                            <p>2. Click "Save Drawing" when finished</p>
+                            <p>3. Fill in zone details above</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="zoneActive" checked class="rounded bg-white/5">
+                            <span class="text-sm text-gray-400">Active Zone</span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button onclick="saveZone()" class="flex-1 h-12 rounded-xl vercel-button font-medium">
+                            <i class="fas fa-save mr-2"></i>Save Zone
+                        </button>
+                        <button onclick="closeCreateEditModal()" class="flex-1 h-12 rounded-xl vercel-button-secondary font-medium">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('createEditModal').classList.remove('hidden');
+        }
+        
+        async function saveZone() {
+            try {
+                const name = document.getElementById('zoneName').value.trim();
+                const description = document.getElementById('zoneDescription').value.trim();
+                const radius = parseInt(document.getElementById('zoneRadius').value);
+                const active = document.getElementById('zoneActive').checked;
+                
+                if (!name) {
+                    showToast('Zone name is required', 'warning');
+                    return;
+                }
+                
+                // Get drawing from map
+                const data = draw.getAll();
+                if (data.features.length === 0) {
+                    showToast('Please draw a zone on the map first', 'warning');
+                    return;
+                }
+                
+                const zoneData = {
+                    name,
+                    description: description || null,
+                    radius_meters: radius,
+                    coordinates: data.features[0].geometry,
+                    active,
+                    created_by: currentAdmin.id
+                };
+                
+                if (currentItem) {
+                    await supabase.from('zones').update(zoneData).eq('id', currentItem.id);
+                    showToast('Zone updated!', 'success');
+                } else {
+                    await supabase.from('zones').insert([zoneData]);
+                    showToast('Zone created!', 'success');
+                }
+                
+                closeCreateEditModal();
+                loadZones();
+                
+            } catch (error) {
+                console.error('Error saving zone:', error);
+                showToast('Error saving zone', 'error');
+            }
+        }
+        
+        // ============================
+        // MISSIONS MANAGEMENT
+        // ============================
+        async function loadMissions() {
+            document.getElementById('adminContent').innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold mb-2">Mission Management</h1>
+                            <p class="text-gray-400">Create and manage game missions</p>
+                        </div>
+                        <button onclick="createNewMission()" class="h-12 px-6 rounded-xl vercel-button font-medium">
+                            <i class="fas fa-plus mr-2"></i>New Mission
+                        </button>
+                    </div>
+                    
+                    <div id="missionsContainer" class="space-y-4">
+                        ${Array(5).fill().map(() => `<div class="h-24 bg-white/5 rounded-xl skeleton"></div>`).join('')}
+                    </div>
+                </div>
+            `;
+            
+            await loadMissionsData();
+        }
+        
+        async function loadMissionsData() {
+            try {
+                const { data, error } = await supabase
+                    .from('missions')
+                    .select(`
+                        *,
+                        zone:zone_id (name)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                missions = data || [];
+                displayMissions();
+            } catch (error) {
+                console.error('Error loading missions:', error);
+                missions = [];
+                displayMissions();
+            }
+        }
+        
+        function displayMissions() {
+            const container = document.getElementById('missionsContainer');
+            if (!missions || missions.length === 0) {
+                container.innerHTML = `
+                    <div class="vercel-card rounded-2xl p-12 text-center">
+                        <i class="fas fa-tasks text-4xl mb-4 text-gray-400"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Missions Yet</h3>
+                        <p class="text-gray-400">Create your first mission</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = missions.map(mission => `
+                <div class="vercel-card rounded-xl p-4">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-semibold">${mission.title}</h4>
+                                <span class="badge ${mission.active ? 'badge-approved' : 'badge-pending'}">
+                                    ${mission.active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-400 line-clamp-2">${mission.description}</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="text-xs bg-white/10 px-2 py-0.5 rounded-full">
+                                    <i class="fas fa-coins mr-1"></i>${mission.points}
+                                </span>
+                                <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                                    ${mission.zone?.name || 'No Zone'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editMission('${mission.id}')" class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteMission('${mission.id}')" class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center hover:bg-red-500/30">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function createNewMission() {
+            currentItem = null;
+            currentItemType = 'mission';
+            
+            document.getElementById('createEditTitle').textContent = 'Create New Mission';
+            document.getElementById('createEditContent').innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Mission Title *</label>
+                        <input type="text" id="missionTitle" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Description *</label>
+                        <textarea id="missionDescription" rows="3" required class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-white/30"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Instructions (optional)</label>
+                        <textarea id="missionInstructions" rows="2" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-white/30"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Points *</label>
+                            <input type="number" id="missionPoints" min="10" max="1000" value="100" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Zone *</label>
+                            <select id="missionZone" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30">
+                                <option value="">Select a zone</option>
+                                ${zones.filter(z => z.active).map(zone => `<option value="${zone.id}">${zone.name}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="missionActive" checked class="rounded bg-white/5">
+                            <span class="text-sm text-gray-400">Active Mission</span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button onclick="saveMission()" class="flex-1 h-12 rounded-xl vercel-button font-medium">
+                            <i class="fas fa-save mr-2"></i>Save Mission
+                        </button>
+                        <button onclick="closeCreateEditModal()" class="flex-1 h-12 rounded-xl vercel-button-secondary font-medium">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('createEditModal').classList.remove('hidden');
+        }
+        
+        async function saveMission() {
+            try {
+                const title = document.getElementById('missionTitle').value.trim();
+                const description = document.getElementById('missionDescription').value.trim();
+                const instructions = document.getElementById('missionInstructions').value.trim();
+                const points = parseInt(document.getElementById('missionPoints').value);
+                const zoneId = document.getElementById('missionZone').value;
+                const active = document.getElementById('missionActive').checked;
+                
+                if (!title || !description || !zoneId) {
+                    showToast('Please fill all required fields', 'warning');
+                    return;
+                }
+                
+                const missionData = {
+                    title,
+                    description,
+                    instructions: instructions || null,
+                    points,
+                    zone_id: zoneId,
+                    active,
+                    mission_type: 'photo'
+                };
+                
+                if (currentItem) {
+                    await supabase.from('missions').update(missionData).eq('id', currentItem.id);
+                    showToast('Mission updated!', 'success');
+                } else {
+                    await supabase.from('missions').insert([missionData]);
+                    showToast('Mission created!', 'success');
+                }
+                
+                closeCreateEditModal();
+                loadMissions();
+                
+            } catch (error) {
+                console.error('Error saving mission:', error);
+                showToast('Error saving mission', 'error');
+            }
+        }
+        
+        // ============================
+        // USERS MANAGEMENT
+        // ============================
+        async function loadUsers() {
+            document.getElementById('adminContent').innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold mb-2">User Management</h1>
+                            <p class="text-gray-400">Manage player accounts</p>
+                        </div>
+                        <button onclick="createNewUser()" class="h-12 px-6 rounded-xl vercel-button font-medium">
+                            <i class="fas fa-plus mr-2"></i>Add User
+                        </button>
+                    </div>
+                    
+                    <div class="vercel-card rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-white/5">
+                                    <tr>
+                                        <th class="text-left p-4 text-sm text-gray-400">Name</th>
+                                        <th class="text-left p-4 text-sm text-gray-400">Email</th>
+                                        <th class="text-left p-4 text-sm text-gray-400">Team</th>
+                                        <th class="text-left p-4 text-sm text-gray-400">Coins</th>
+                                        <th class="text-left p-4 text-sm text-gray-400">Role</th>
+                                        <th class="text-left p-4 text-sm text-gray-400">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    ${Array(5).fill().map(() => `
+                                        <tr><td class="p-4"><div class="h-8 bg-white/5 rounded-xl"></div></td>
+                                        <td class="p-4"><div class="h-8 bg-white/5 rounded-xl"></div></td>
+                                        <td class="p-4"><div class="h-8 bg-white/5 rounded-xl"></div></td>
+                                        <td class="p-4"><div class="h-8 bg-white/5 rounded-xl"></div></td>
+                                        <td class="p-4"><div class="h-8 bg-white/5 rounded-xl"></div></td>
+                                        <td class="p-4"><div class="h-8 bg-white/5 rounded-xl"></div></td></tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            await loadUsersData();
+        }
+        
+        async function loadUsersData() {
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                users = data || [];
+                displayUsers();
+            } catch (error) {
+                console.error('Error loading users:', error);
+                users = [];
+                displayUsers();
+            }
+        }
+        
+        function displayUsers() {
+            const container = document.getElementById('usersTableBody');
+            if (!users || users.length === 0) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-400">
+                            No users found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            container.innerHTML = users.map(user => `
+                <tr class="border-b border-white/5">
+                    <td class="p-4">
+                        <div class="font-medium">${user.name || 'Unknown'}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="text-gray-300">${user.email}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="text-sm text-gray-400">${user.team_name || 'None'}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-coins text-yellow-400"></i>
+                            <span>${user.coins || 0}</span>
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <span class="badge ${user.is_admin ? 'badge-approved' : 'badge-pending'}">
+                            ${user.is_admin ? 'Admin' : 'Player'}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex gap-2">
+                            <button onclick="editUser('${user.id}')" class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20">
+                                <i class="fas fa-edit text-sm"></i>
+                            </button>
+                            <button onclick="toggleAdminStatus('${user.id}', ${user.is_admin})" class="w-8 h-8 rounded-lg ${user.is_admin ? 'bg-yellow-500/20 hover:bg-yellow-500/30' : 'bg-blue-500/20 hover:bg-blue-500/30'} flex items-center justify-center">
+                                <i class="fas ${user.is_admin ? 'fa-user' : 'fa-user-shield'} text-sm"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        async function toggleAdminStatus(userId, isCurrentlyAdmin) {
+            try {
+                await supabase
+                    .from('users')
+                    .update({ is_admin: !isCurrentlyAdmin })
+                    .eq('id', userId);
+                
+                showToast(`User ${!isCurrentlyAdmin ? 'promoted to admin' : 'demoted to player'}`, 'success');
+                loadUsersData();
+            } catch (error) {
+                console.error('Error toggling admin status:', error);
+                showToast('Error updating user role', 'error');
+            }
+        }
+        
+        // ============================
+        // SHOP MANAGEMENT
+        // ============================
+        async function loadShop() {
+            document.getElementById('adminContent').innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold mb-2">Shop Management</h1>
+                            <p class="text-gray-400">Manage prizes and inventory</p>
+                        </div>
+                        <button onclick="createNewPrize()" class="h-12 px-6 rounded-xl vercel-button font-medium">
+                            <i class="fas fa-plus mr-2"></i>New Prize
+                        </button>
+                    </div>
+                    
+                    <div id="prizesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${Array(3).fill().map(() => `<div class="h-64 bg-white/5 rounded-2xl skeleton"></div>`).join('')}
+                    </div>
+                </div>
+            `;
+            
+            await loadPrizesData();
+        }
+        
+        async function loadPrizesData() {
+            try {
+                const { data, error } = await supabase
+                    .from('prizes')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                prizes = data || [];
+                displayPrizes();
+            } catch (error) {
+                console.error('Error loading prizes:', error);
+                prizes = [];
+                displayPrizes();
+            }
+        }
+        
+        function displayPrizes() {
+            const container = document.getElementById('prizesGrid');
+            if (!prizes || prizes.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-3 vercel-card rounded-2xl p-12 text-center">
+                        <i class="fas fa-gift text-4xl mb-4 text-gray-400"></i>
+                        <h3 class="text-xl font-semibold mb-2">No Prizes Yet</h3>
+                        <p class="text-gray-400">Create your first prize</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = prizes.map(prize => `
+                <div class="vercel-card rounded-xl p-4">
+                    <div class="aspect-square rounded-xl bg-white/5 flex items-center justify-center text-6xl mb-3">
+                        ${prize.image_url ? `<img src="${prize.image_url}" class="w-full h-full object-cover rounded-xl">` : '<i class="fas fa-gift text-gray-400"></i>'}
+                    </div>
+                    <h4 class="font-semibold mb-1">${prize.name}</h4>
+                    <p class="text-sm text-gray-400 line-clamp-2 mb-2">${prize.description || 'No description'}</p>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-coins text-yellow-400"></i>
+                            <span class="font-bold">${prize.price}</span>
+                        </div>
+                        <div class="text-xs ${prize.remaining_quantity <= 3 ? 'text-orange-400' : 'text-gray-400'}">
+                            ${prize.remaining_quantity} / ${prize.total_quantity} left
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editPrize('${prize.id}')" class="flex-1 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-sm">
+                            Edit
+                        </button>
+                        <button onclick="deletePrize('${prize.id}')" class="w-10 h-10 rounded-xl bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function createNewPrize() {
+            currentItem = null;
+            currentItemType = 'prize';
+            
+            document.getElementById('createEditTitle').textContent = 'Create New Prize';
+            document.getElementById('createEditContent').innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Prize Name *</label>
+                        <input type="text" id="prizeName" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Description</label>
+                        <textarea id="prizeDescription" rows="3" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-white/30"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Price *</label>
+                            <input type="number" id="prizePrice" min="10" max="10000" value="100" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Total Quantity *</label>
+                            <input type="number" id="prizeTotalQuantity" min="1" max="1000" value="10" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Image URL (optional)</label>
+                        <input type="url" id="prizeImageUrl" class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30" placeholder="https://example.com/image.jpg">
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="prizeActive" checked class="rounded bg-white/5">
+                            <span class="text-sm text-gray-400">Active Prize</span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button onclick="savePrize()" class="flex-1 h-12 rounded-xl vercel-button font-medium">
+                            <i class="fas fa-save mr-2"></i>Save Prize
+                        </button>
+                        <button onclick="closeCreateEditModal()" class="flex-1 h-12 rounded-xl vercel-button-secondary font-medium">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('createEditModal').classList.remove('hidden');
+        }
+        
+        async function savePrize() {
+            try {
+                const name = document.getElementById('prizeName').value.trim();
+                const description = document.getElementById('prizeDescription').value.trim();
+                const price = parseInt(document.getElementById('prizePrice').value);
+                const totalQuantity = parseInt(document.getElementById('prizeTotalQuantity').value);
+                const imageUrl = document.getElementById('prizeImageUrl').value.trim();
+                const active = document.getElementById('prizeActive').checked;
+                
+                if (!name || price <= 0 || totalQuantity <= 0) {
+                    showToast('Please fill all required fields correctly', 'warning');
+                    return;
+                }
+                
+                const prizeData = {
+                    name,
+                    description: description || null,
+                    price,
+                    total_quantity: totalQuantity,
+                    remaining_quantity: totalQuantity,
+                    image_url: imageUrl || null,
+                    active
+                };
+                
+                if (currentItem) {
+                    await supabase.from('prizes').update(prizeData).eq('id', currentItem.id);
+                    showToast('Prize updated!', 'success');
+                } else {
+                    await supabase.from('prizes').insert([prizeData]);
+                    showToast('Prize created!', 'success');
+                }
+                
+                closeCreateEditModal();
+                loadShop();
+                
+            } catch (error) {
+                console.error('Error saving prize:', error);
+                showToast('Error saving prize', 'error');
+            }
+        }
+        
+        // ============================
+        // SOS ALERTS
+        // ============================
+        async function loadSOS() {
+            document.getElementById('adminContent').innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold mb-2">SOS Alerts</h1>
+                            <p class="text-gray-400">Emergency alerts from players</p>
+                        </div>
+                    </div>
+                    
+                    <div id="sosAlertsList" class="space-y-4">
+                        ${Array(3).fill().map(() => `<div class="h-24 bg-white/5 rounded-xl skeleton"></div>`).join('')}
+                    </div>
+                </div>
+            `;
+            
+            await loadSOSAlerts();
+        }
+        
+        async function loadSOSAlerts() {
+            try {
+                const { data, error } = await supabase
+                    .from('sos_alerts')
+                    .select(`
+                        *,
+                        user:user_id (name, email)
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                
+                if (error) throw error;
+                sosAlerts = data || [];
+                displaySOSAlerts();
+            } catch (error) {
+                console.error('Error loading SOS alerts:', error);
+                sosAlerts = [];
+                displaySOSAlerts();
+            }
+        }
+        
+        function displaySOSAlerts() {
+            const container = document.getElementById('sosAlertsList');
+            if (!sosAlerts || sosAlerts.length === 0) {
+                container.innerHTML = `
+                    <div class="vercel-card rounded-2xl p-12 text-center">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-4 text-gray-400"></i>
+                        <h3 class="text-xl font-semibold mb-2">No SOS Alerts</h3>
+                        <p class="text-gray-400">No emergency alerts at this time</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = sosAlerts.map(alert => `
+                <div class="vercel-card rounded-xl p-4 ${alert.status === 'active' ? 'border-l-4 border-red-500' : ''}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-semibold">${alert.user?.name || 'Unknown User'}</h4>
+                                <span class="badge ${alert.status === 'active' ? 'badge-pending' : 'badge-approved'}">
+                                    ${alert.status === 'active' ? 'Active' : 'Resolved'}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-2">${alert.message || 'Emergency SOS triggered'}</p>
+                            <div class="text-xs text-gray-400">
+                                ${formatTimeAgo(alert.created_at)}
+                                ${alert.location ? ` • Location: ${JSON.parse(alert.location).lat.toFixed(4)}, ${JSON.parse(alert.location).lng.toFixed(4)}` : ''}
+                            </div>
+                        </div>
+                        ${alert.status === 'active' ? `
+                            <button onclick="resolveSOS('${alert.id}')" class="h-10 px-4 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm">
+                                Resolve
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function resolveSOS(alertId) {
+            try {
+                await supabase
+                    .from('sos_alerts')
+                    .update({
+                        status: 'resolved',
+                        resolved_by: currentAdmin.id,
+                        resolved_at: new Date().toISOString()
+                    })
+                    .eq('id', alertId);
+                
+                showToast('SOS alert resolved', 'success');
+                loadSOSAlerts();
+            } catch (error) {
+                console.error('Error resolving SOS:', error);
+                showToast('Error resolving alert', 'error');
+            }
+        }
+        
+        // ============================
+        // UTILITIES
+        // ============================
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+            
+            if (diffDay > 7) return date.toLocaleDateString();
+            else if (diffDay > 0) return `${diffDay}d ago`;
+            else if (diffHour > 0) return `${diffHour}h ago`;
+            else if (diffMin > 0) return `${diffMin}m ago`;
+            else return 'just now';
+        }
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500', info: 'bg-blue-500' };
+            const toast = document.createElement('div');
+            toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg animate-fadeIn max-w-sm`;
+            toast.innerHTML = `<div class="flex items-center justify-between"><span>${message}</span><button onclick="this.parentElement.parentElement.remove()" class="ml-4"><i class="fas fa-times"></i></button></div>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-20px)';
+                    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 300);
+                }
+            }, 4000);
+        }
+        
+        function setupEventListeners() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeSubmissionModal();
+                    closeCreateEditModal();
+                }
+            });
+        }
+        
+        function closeCreateEditModal() {
+            document.getElementById('createEditModal').classList.add('hidden');
+            currentItem = null;
+            currentItemType = null;
+        }
+    </script>
+</body>
+</html>
