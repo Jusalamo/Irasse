@@ -2,1905 +2,1592 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scavenger Hunt - Player</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title> THE HUNT</title>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    
     <style>
-        .mission-card:hover { transform: translateY(-5px); transition: all 0.3s ease; }
-        .sos-btn { animation: pulse 2s infinite; }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        :root { --primary: #ffffff; --secondary: #000000; --accent: #0070f3; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6; }
+        body { font-family: 'Inter', sans-serif; background: #000; color: white; }
+        .vercel-card { background: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; }
+        .vercel-button { background: #fff; color: #000; transition: all 0.2s; font-weight: 500; border-radius: 8px; }
+        .vercel-button:hover { background: rgba(255,255,255,0.9); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
+        .vercel-button-secondary { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 8px; }
+        .vercel-button-secondary:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); }
+        .sos-button { background: linear-gradient(135deg, var(--danger), #dc2626); box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); animation: pulse-sos 2s infinite; border-radius: 12px; }
+        @keyframes pulse-sos { 0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); } 50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.6); } }
+        .active-nav { color: white; position: relative; }
+        .active-nav::after { content: ''; position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: white; border-radius: 50%; }
+        .timer-container { background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); border-radius: 10px; padding: 8px 12px; font-variant-numeric: tabular-nums; }
+        .notification-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .mission-completed { border-left: 3px solid var(--success); background: linear-gradient(to right, rgba(16, 185, 129, 0.1), transparent); }
+        .mission-pending { border-left: 3px solid var(--warning); background: linear-gradient(to right, rgba(245, 158, 11, 0.1), transparent); }
+        .mission-unlocked { border-left: 3px solid var(--info); background: linear-gradient(to right, rgba(59, 130, 246, 0.1), transparent); }
+        .mapboxgl-popup-content { background: rgba(0,0,0,0.95) !important; border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 12px !important; color: white !important; padding: 16px !important; }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
-<body class="bg-gray-50">
-    <div id="app">
-        <!-- Content will be dynamically loaded here -->
+<body class="bg-black text-white">
+    <!-- Auth Screen -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md space-y-8 animate-fadeIn">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold mb-2">THE HUNT</h1>
+                <p class="text-gray-400">Interactive Adventure Platform</p>
+            </div>
+            
+            <div class="vercel-card p-8">
+                <div id="authError" class="hidden bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6"></div>
+                
+                <div id="loginForm">
+                    <h2 class="text-xl font-semibold mb-6">Sign In</h2>
+                    <form onsubmit="handleLogin(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Email</label>
+                                <input type="email" id="loginEmail" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-colors" placeholder="player@example.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Password</label>
+                                <input type="password" id="loginPassword" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-colors" placeholder="••••••••">
+                            </div>
+                            <button type="submit" class="w-full h-12 rounded-xl vercel-button font-medium">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                            </button>
+                        </div>
+                    </form>
+                    <p class="text-center mt-6 text-sm text-gray-400">
+                        Don't have an account? 
+                        <button onclick="toggleAuthMode()" class="text-white hover:underline">Sign Up</button>
+                    </p>
+                </div>
+                
+                <div id="signupForm" class="hidden">
+                    <h2 class="text-xl font-semibold mb-6">Create Account</h2>
+                    <form onsubmit="handleSignup(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Full Name</label>
+                                <input type="text" id="signupName" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-colors" placeholder="John Doe">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Email</label>
+                                <input type="email" id="signupEmail" required class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-colors" placeholder="player@example.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Password (min 6 chars)</label>
+                                <input type="password" id="signupPassword" required minlength="6" class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-colors" placeholder="••••••••">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Team Name (optional)</label>
+                                <input type="text" id="signupTeam" class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-colors" placeholder="Adventurers">
+                            </div>
+                            <button type="submit" class="w-full h-12 rounded-xl vercel-button font-medium">
+                                <i class="fas fa-user-plus mr-2"></i>Create Account
+                            </button>
+                        </div>
+                    </form>
+                    <p class="text-center mt-6 text-sm text-gray-400">
+                        Already have an account? 
+                        <button onclick="toggleAuthMode()" class="text-white hover:underline">Sign In</button>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="vercel-card p-6 text-center">
+                <h3 class="text-sm font-semibold text-gray-400 mb-2">Quick Login</h3>
+                <p class="text-sm text-gray-400 mb-3">Use these credentials for testing:</p>
+                <div class="space-y-2">
+                    <div class="text-sm text-gray-300">Email: <span class="text-white">player@example.com</span></div>
+                    <div class="text-sm text-gray-300">Password: <span class="text-white">1234567</span></div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="fixed top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-xl border-b border-white/10 z-40">
+            <div class="h-full px-4 flex items-center justify-between max-w-7xl mx-auto">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleSidebar()" class="lg:hidden w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="text-xl font-bold">AN IRRASE EXPERIENCE</h1>
+                    <div class="timer-container hidden md:flex items-center gap-2">
+                        <i class="fas fa-clock text-gray-400"></i>
+                        <span id="eventTimer" class="font-medium">08:00:00</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="vercel-card px-4 py-2 rounded-full flex items-center gap-2">
+                        <i class="fas fa-coins text-yellow-400"></i>
+                        <span id="coinDisplay" class="font-semibold">100</span>
+                    </div>
+                    <button onclick="showNotifications()" class="notification-bell w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20">
+                        <i class="fas fa-bell"></i>
+                        <div id="notificationDot" class="notification-dot hidden"></div>
+                    </button>
+                    <button onclick="showProfile()" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20">
+                        <i class="fas fa-user"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <div id="sidebar" class="hidden lg:block fixed left-0 top-16 bottom-0 w-64 bg-black/80 backdrop-blur-xl border-r border-white/10 z-30">
+            <div class="p-4 space-y-1">
+                <button onclick="showHome()" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-white/10">
+                    <i class="fas fa-home w-5"></i> Home
+                </button>
+                <button onclick="showMissions()" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-white/10">
+                    <i class="fas fa-tasks w-5"></i> Missions
+                </button>
+                <button onclick="showLeaderboard()" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-white/10">
+                    <i class="fas fa-trophy w-5"></i> Leaderboard
+                </button>
+                <button onclick="showShop()" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-white/10">
+                    <i class="fas fa-shopping-cart w-5"></i> Shop
+                </button>
+                <button onclick="showNotifications()" class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-white/10">
+                    <i class="fas fa-bell w-5"></i> Notifications
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="pt-16 pb-20 lg:pb-0 lg:pl-64">
+            <!-- Home Page -->
+            <div id="homePage" class="max-w-7xl mx-auto p-4 space-y-4">
+                <button onclick="triggerSOS()" class="sos-button w-full h-20 rounded-2xl text-white font-bold text-lg flex items-center justify-center gap-3">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                    <span>EMERGENCY SOS</span>
+                </button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="vercel-card p-4">
+                        <div class="flex items-center gap-3 mb-2"><i class="fas fa-tasks text-2xl text-blue-400"></i></div>
+                        <div class="text-2xl font-bold" id="missionCount">0</div>
+                        <div class="text-sm text-gray-400">Active Missions</div>
+                    </div>
+                    <div class="vercel-card p-4">
+                        <div class="flex items-center gap-3 mb-2"><i class="fas fa-map-marker-alt text-2xl text-green-400"></i></div>
+                        <div class="text-2xl font-bold" id="zoneCount">0</div>
+                        <div class="text-sm text-gray-400">Nearby Zones</div>
+                    </div>
+                </div>
+                <div class="vercel-card overflow-hidden">
+                    <div id="map" class="w-full h-[50vh]"></div>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold">Your Missions</h2>
+                        <button onclick="showMissions()" class="text-sm text-gray-400 hover:text-white">View All <i class="fas fa-arrow-right ml-1"></i></button>
+                    </div>
+                    <div id="activeMissionsList" class="space-y-3">
+                        <div class="vercel-card p-4 text-center text-gray-400">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading missions...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Missions Page -->
+            <div id="missionsPage" class="hidden max-w-7xl mx-auto p-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <button onclick="showHome()" class="text-gray-400 hover:text-white"><i class="fas fa-arrow-left mr-2"></i>Back</button>
+                    <h2 class="text-xl font-bold">All Missions</h2>
+                    <div class="w-8"></div>
+                </div>
+                <div id="missionsList" class="space-y-3"></div>
+            </div>
+
+            <!-- Leaderboard Page -->
+            <div id="leaderboardPage" class="hidden max-w-7xl mx-auto p-4 space-y-4">
+                <h2 class="text-xl font-bold">Leaderboard</h2>
+                <div id="leaderboardList" class="space-y-2"></div>
+            </div>
+
+            <!-- Shop Page -->
+            <div id="shopPage" class="hidden max-w-7xl mx-auto p-4 space-y-4">
+                <h2 class="text-xl font-bold">Rewards Shop</h2>
+                <div id="shopItems" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- Notifications Page -->
+            <div id="notificationsPage" class="hidden max-w-7xl mx-auto p-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <button onclick="showHome()" class="text-gray-400 hover:text-white"><i class="fas fa-arrow-left mr-2"></i>Back</button>
+                    <h2 class="text-xl font-bold">Notifications</h2>
+                    <button onclick="markAllAsRead()" class="text-sm text-gray-400 hover:text-white">Mark all as read</button>
+                </div>
+                <div id="notificationsList" class="space-y-3"></div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-xl border-t border-white/10 z-40">
+            <div class="h-full max-w-7xl mx-auto flex items-center justify-around px-4">
+                <button onclick="showHome()" class="nav-item flex flex-col items-center gap-1" data-page="home">
+                    <i class="fas fa-home text-xl"></i><span class="text-xs">Home</span>
+                </button>
+                <button onclick="showMissions()" class="nav-item flex flex-col items-center gap-1" data-page="missions">
+                    <i class="fas fa-tasks text-xl"></i><span class="text-xs">Missions</span>
+                </button>
+                <button onclick="showLeaderboard()" class="nav-item flex flex-col items-center gap-1" data-page="leaderboard">
+                    <i class="fas fa-trophy text-xl"></i><span class="text-xs">Leaderboard</span>
+                </button>
+                <button onclick="showShop()" class="nav-item flex flex-col items-center gap-1" data-page="shop">
+                    <i class="fas fa-shopping-cart text-xl"></i><span class="text-xs">Shop</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Mission Modal -->
+    <div id="missionModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="vercel-card max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold" id="modalMissionTitle">Mission</h3>
+                    <button onclick="closeMissionModal()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="modalMissionContent"></div>
+                <div class="mt-6 space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2"><i class="fas fa-camera mr-2"></i>Upload Photo/Video</label>
+                        <input type="file" id="mediaInput" accept="image/*,video/*" class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-black">
+                        <div id="mediaPreview" class="mt-2"></div>
+                    </div>
+                    <button onclick="submitMission()" id="submitMissionBtn" class="w-full h-12 rounded-xl vercel-button font-medium">
+                        <i class="fas fa-paper-plane mr-2"></i>Submit Mission
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="vercel-card max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold">Profile</h3>
+                    <button onclick="closeProfile()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-3xl mx-auto mb-3">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold" id="profileName">Loading...</h4>
+                        <p class="text-sm text-gray-400" id="profileEmail">Loading...</p>
+                        <p class="text-sm text-gray-400" id="profileTeam">Team: Loading...</p>
+                    </div>
+                    <div class="vercel-card rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Total Coins</span>
+                            <span class="text-xl font-bold flex items-center gap-2"><i class="fas fa-coins text-yellow-400"></i><span id="profileCoins">0</span></span>
+                        </div>
+                    </div>
+                    <button onclick="handleLogout()" class="w-full h-12 rounded-xl vercel-button-secondary font-medium">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div id="notificationsModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="vercel-card max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold">Notifications</h3>
+                    <button onclick="closeNotificationsModal()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="notificationsModalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-2"></div>
+
     <script>
-        // Supabase configuration with your credentials
+        // ============================
+        // CONFIGURATION
+        // ============================
         const SUPABASE_URL = 'https://wllpidtujqnfohpsfqyy.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_9lIP3MDWOz2_Udkrhx4tjw_cpFkyuRa';
+        const SUPABASE_ANON_KEY = 'sb_publishable_9lIP3MDWOz2_Udkrhx4tjw_cpFkyuRa';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Initialize Supabase
-        const supabase = window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        mapboxgl.accessToken = 'pk.eyJ1IjoianVzYSIsImEiOiJjbTZnc2Y0a2swNHFuMmxwbzBxYm80aTh3In0.RHyfezw9C01ZXlgOiymD0Q';
         
-        // Global state
+        // ============================
+        // GLOBAL STATE
+        // ============================
         let currentUser = null;
-        let isAdmin = false;
+        let userProfile = null;
+        let map = null;
+        let userMarker = null;
+        let zones = [];
+        let missions = [];
+        let userMissions = [];
+        let currentPosition = null;
+        let watchId = null;
+        let currentMission = null;
+        let currentPage = 'home';
+        let leaderboardData = [];
+        let shopItems = [];
+        let notifications = [];
+        let unreadNotifications = 0;
+        let eventTimerInterval = null;
         
-        // Auth functions
+        // ============================
+        // INITIALIZATION
+        // ============================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            setupEventListeners();
+        });
+        
+        // ============================
+        // AUTHENTICATION
+        // ============================
         async function checkAuth() {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                await setCurrentUser(session.user.id);
-                return true;
-            }
-            return false;
-        }
-        
-        async function setCurrentUser(authId) {
-            const { data: user, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('auth_uid', authId)
-                .single();
-            
-            if (user && !error) {
-                currentUser = user;
-                isAdmin = user.is_admin;
-                return user;
-            }
-            return null;
-        }
-        
-        async function signUp(email, password, name) {
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: { name },
-                    emailRedirectTo: window.location.origin
-                }
-            });
-            
-            if (error) throw error;
-            return data;
-        }
-        
-        async function signIn(email, password) {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-            
-            if (error) throw error;
-            
-            await setCurrentUser(data.user.id);
-            return data;
-        }
-        
-        async function signOut() {
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-            
-            currentUser = null;
-            isAdmin = false;
-            renderLoginPage();
-        }
-        
-        async function updateProfile(updates) {
-            if (!currentUser) throw new Error('Not logged in');
-            
-            const { data, error } = await supabase
-                .from('users')
-                .update(updates)
-                .eq('id', currentUser.id)
-                .select()
-                .single();
-                
-            if (error) throw error;
-            
-            currentUser = data;
-            return data;
-        }
-        
-        // Navigation functions
-        function navigateTo(page) {
-            window.location.hash = page;
-            handleRoute();
-        }
-        
-        function handleRoute() {
-            const hash = window.location.hash.substring(1) || 'dashboard';
-            
-            switch(hash) {
-                case 'dashboard':
-                    renderDashboard();
-                    break;
-                case 'login':
-                    renderLoginPage();
-                    break;
-                case 'register':
-                    renderRegisterPage();
-                    break;
-                case 'missions':
-                    renderMissionsPage();
-                    break;
-                case 'submissions':
-                    renderSubmissionsPage();
-                    break;
-                case 'prizes':
-                    renderPrizesPage();
-                    break;
-                case 'sos':
-                    renderSOSPage();
-                    break;
-                case 'profile':
-                    renderProfilePage();
-                    break;
-                default:
-                    renderDashboard();
+                currentUser = session.user;
+                await loadUserProfile();
+                showMainApp();
+                startEventTimer();
             }
         }
         
-        // Render functions
-        async function renderNavbar() {
-            const isLoggedIn = await checkAuth();
-            
-            const navHtml = `
-                <nav class="bg-blue-600 text-white shadow-lg">
-                    <div class="container mx-auto px-4">
-                        <div class="flex justify-between items-center h-16">
-                            <div class="flex items-center space-x-4">
-                                <a href="#dashboard" onclick="navigateTo('dashboard')" class="text-xl font-bold">Scavenger Hunt</a>
-                                ${isLoggedIn ? `
-                                    <a href="#missions" onclick="navigateTo('missions')" class="hover:bg-blue-700 px-3 py-2 rounded">Missions</a>
-                                    <a href="#submissions" onclick="navigateTo('submissions')" class="hover:bg-blue-700 px-3 py-2 rounded">Submissions</a>
-                                    <a href="#prizes" onclick="navigateTo('prizes')" class="hover:bg-blue-700 px-3 py-2 rounded">Prizes</a>
-                                    <a href="#sos" onclick="navigateTo('sos')" class="hover:bg-blue-700 px-3 py-2 rounded">SOS</a>
-                                ` : ''}
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                ${isLoggedIn ? `
-                                    <div class="flex items-center space-x-2">
-                                        <span>${currentUser?.name || 'User'}</span>
-                                        <span class="bg-yellow-500 text-black px-2 py-1 rounded text-sm">
-                                            ${currentUser?.coins || 0} coins
-                                        </span>
-                                        <a href="#profile" onclick="navigateTo('profile')" class="hover:bg-blue-700 px-3 py-2 rounded">
-                                            <i class="fas fa-user"></i>
-                                        </a>
-                                        <button onclick="signOut()" 
-                                                class="hover:bg-blue-700 px-3 py-2 rounded">
-                                            Logout
-                                        </button>
-                                    </div>
-                                ` : `
-                                    <a href="#login" onclick="navigateTo('login')" class="hover:bg-blue-700 px-3 py-2 rounded">Login</a>
-                                    <a href="#register" onclick="navigateTo('register')" class="hover:bg-blue-700 px-3 py-2 rounded">Register</a>
-                                `}
-                            </div>
-                        </div>
-                    </div>
-                </nav>
-            `;
-            
-            return navHtml;
+        function toggleAuthMode() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('signupForm').classList.toggle('hidden');
+            document.getElementById('authError').classList.add('hidden');
         }
         
-        async function renderDashboard() {
-            const isLoggedIn = await checkAuth();
-            
-            if (!isLoggedIn) {
-                renderLoginPage();
-                return;
-            }
-            
-            // Get user stats
-            const { data: userStats } = await supabase
-                .from('users')
-                .select('coins, name')
-                .eq('id', currentUser.id)
-                .single();
-                
-            const { data: missions } = await supabase
-                .from('user_missions')
-                .select(`
-                    mission_id,
-                    missions(title, points),
-                    status
-                `)
-                .eq('user_id', currentUser.id)
-                .eq('status', 'completed');
-                
-            const { data: activeMissions } = await supabase
-                .from('missions')
-                .select('*')
-                .eq('active', true)
-                .limit(3);
-            
-            const nav = await renderNavbar();
-            const content = `
-                <div class="min-h-screen fade-in">
-                    ${nav}
-                    <div class="container mx-auto px-4 py-8">
-                        <div class="text-center mb-8">
-                            <h1 class="text-4xl font-bold text-gray-800 mb-4">Welcome back, ${userStats?.name || 'Explorer'}!</h1>
-                            <p class="text-gray-600">Complete missions, earn coins, and redeem prizes!</p>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="bg-white p-6 rounded-lg shadow">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Your Coins</h3>
-                                        <p class="text-3xl font-bold text-yellow-600">${userStats?.coins || 0}</p>
-                                    </div>
-                                    <i class="fas fa-coins text-3xl text-yellow-500"></i>
-                                </div>
-                            </div>
-                            
-                            <div class="bg-white p-6 rounded-lg shadow">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Completed Missions</h3>
-                                        <p class="text-3xl font-bold text-green-600">${missions?.length || 0}</p>
-                                    </div>
-                                    <i class="fas fa-flag-checkered text-3xl text-green-500"></i>
-                                </div>
-                            </div>
-                            
-                            <div class="bg-white p-6 rounded-lg shadow">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Points</h3>
-                                        <p class="text-3xl font-bold text-blue-600">
-                                            ${missions?.reduce((sum, m) => sum + (m.missions?.points || 0), 0) || 0}
-                                        </p>
-                                    </div>
-                                    <i class="fas fa-star text-3xl text-blue-500"></i>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow p-6 mb-8">
-                            <div class="flex justify-between items-center mb-6">
-                                <h2 class="text-2xl font-bold text-gray-800">Featured Missions</h2>
-                                <a href="#missions" onclick="navigateTo('missions')" class="text-blue-600 hover:text-blue-800 font-semibold">
-                                    View All →
-                                </a>
-                            </div>
-                            
-                            ${activeMissions?.length ? `
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    ${activeMissions.map(mission => `
-                                        <div class="border rounded-lg p-4 hover:shadow-lg transition-all duration-300 mission-card">
-                                            <div class="flex justify-between items-start mb-3">
-                                                <h3 class="font-semibold text-lg text-gray-800">${mission.title}</h3>
-                                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                                                    ${mission.points} pts
-                                                </span>
-                                            </div>
-                                            <p class="text-gray-600 mb-4">${mission.description}</p>
-                                            <button onclick="startMission('${mission.id}')" 
-                                                    class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
-                                                <i class="fas fa-play-circle mr-2"></i>Start Mission
-                                            </button>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : '<p class="text-gray-500 text-center py-8">No missions available at the moment.</p>'}
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-6">Quick Actions</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <a href="#missions" onclick="navigateTo('missions')" 
-                                   class="bg-blue-50 border border-blue-200 p-6 rounded-lg text-center hover:bg-blue-100 transition-colors group">
-                                    <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200">
-                                        <i class="fas fa-flag text-2xl text-blue-600"></i>
-                                    </div>
-                                    <p class="font-semibold text-blue-800">View Missions</p>
-                                    <p class="text-sm text-blue-600 mt-2">Explore all available missions</p>
-                                </a>
-                                
-                                <a href="#submissions" onclick="navigateTo('submissions')" 
-                                   class="bg-green-50 border border-green-200 p-6 rounded-lg text-center hover:bg-green-100 transition-colors group">
-                                    <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200">
-                                        <i class="fas fa-upload text-2xl text-green-600"></i>
-                                    </div>
-                                    <p class="font-semibold text-green-800">Submit Mission</p>
-                                    <p class="text-sm text-green-600 mt-2">Upload your mission proof</p>
-                                </a>
-                                
-                                <a href="#prizes" onclick="navigateTo('prizes')" 
-                                   class="bg-yellow-50 border border-yellow-200 p-6 rounded-lg text-center hover:bg-yellow-100 transition-colors group">
-                                    <div class="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-yellow-200">
-                                        <i class="fas fa-gift text-2xl text-yellow-600"></i>
-                                    </div>
-                                    <p class="font-semibold text-yellow-800">Redeem Prizes</p>
-                                    <p class="text-sm text-yellow-600 mt-2">Exchange coins for rewards</p>
-                                </a>
-                                
-                                <a href="#sos" onclick="navigateTo('sos')" 
-                                   class="bg-red-50 border border-red-200 p-6 rounded-lg text-center hover:bg-red-100 transition-colors group sos-btn">
-                                    <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-red-200">
-                                        <i class="fas fa-life-ring text-2xl text-red-600"></i>
-                                    </div>
-                                    <p class="font-semibold text-red-800">SOS Help</p>
-                                    <p class="text-sm text-red-600 mt-2">Emergency assistance</p>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = content;
-        }
-        
-        async function startMission(missionId) {
-            const { data: existing } = await supabase
-                .from('user_missions')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .eq('mission_id', missionId)
-                .single();
-                
-            if (!existing) {
-                const { error } = await supabase
-                    .from('user_missions')
-                    .insert({
-                        user_id: currentUser.id,
-                        mission_id: missionId,
-                        status: 'started'
-                    });
-                    
-                if (error) {
-                    alert('Error starting mission: ' + error.message);
-                    return;
-                }
-            }
-            
-            navigateTo('missions');
-        }
-        
-        function renderLoginPage() {
-            const content = `
-                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 fade-in">
-                    <div class="max-w-md w-full mx-4">
-                        <div class="text-center mb-8">
-                            <h1 class="text-4xl font-bold text-gray-800 mb-2">Scavenger Hunt</h1>
-                            <p class="text-gray-600">Adventure awaits! Login to continue</p>
-                        </div>
-                        
-                        <div class="bg-white rounded-2xl shadow-xl p-8">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Login to Your Account</h2>
-                            
-                            <form id="loginForm" class="space-y-4">
-                                <div>
-                                    <label class="block text-gray-700 text-sm font-medium mb-2" for="email">
-                                        Email Address
-                                    </label>
-                                    <input type="email" id="email" name="email" required
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                           placeholder="you@example.com">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-gray-700 text-sm font-medium mb-2" for="password">
-                                        Password
-                                    </label>
-                                    <input type="password" id="password" name="password" required
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                           placeholder="••••••••">
-                                </div>
-                                
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <input type="checkbox" id="remember" class="h-4 w-4 text-blue-600 rounded">
-                                        <label for="remember" class="ml-2 text-sm text-gray-600">Remember me</label>
-                                    </div>
-                                    <a href="#" class="text-sm text-blue-600 hover:text-blue-800">Forgot password?</a>
-                                </div>
-                                
-                                <button type="submit" id="loginBtn"
-                                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                    <span id="loginText">Sign In</span>
-                                    <div id="loginLoader" class="loader hidden"></div>
-                                </button>
-                                
-                                <div class="text-center text-sm text-gray-600">
-                                    Don't have an account? 
-                                    <a href="#register" onclick="navigateTo('register')" class="text-blue-600 font-semibold hover:text-blue-800">Sign up</a>
-                                </div>
-                            </form>
-                            
-                            <div id="loginMessage" class="mt-4 hidden"></div>
-                        </div>
-                        
-                        <div class="text-center mt-6">
-                            <a href="#dashboard" onclick="navigateTo('dashboard')" class="text-gray-600 hover:text-gray-800">
-                                <i class="fas fa-home mr-2"></i>Return to Home
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = content;
-            
-            // Add form submission handler
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                const loginBtn = document.getElementById('loginBtn');
-                const loginText = document.getElementById('loginText');
-                const loginLoader = document.getElementById('loginLoader');
-                const messageDiv = document.getElementById('loginMessage');
-                
-                loginBtn.disabled = true;
-                loginText.classList.add('hidden');
-                loginLoader.classList.remove('hidden');
-                messageDiv.classList.add('hidden');
-                
-                try {
-                    await signIn(email, password);
-                    messageDiv.innerHTML = `
-                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                            Login successful! Redirecting...
-                        </div>
-                    `;
-                    messageDiv.classList.remove('hidden');
-                    
-                    setTimeout(() => {
-                        navigateTo('dashboard');
-                    }, 1000);
-                    
-                } catch (error) {
-                    messageDiv.innerHTML = `
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            ${error.message}
-                        </div>
-                    `;
-                    messageDiv.classList.remove('hidden');
-                    
-                    loginBtn.disabled = false;
-                    loginText.classList.remove('hidden');
-                    loginLoader.classList.add('hidden');
-                }
-            });
-        }
-        
-        function renderRegisterPage() {
-            const content = `
-                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 fade-in">
-                    <div class="max-w-md w-full mx-4">
-                        <div class="text-center mb-8">
-                            <h1 class="text-4xl font-bold text-gray-800 mb-2">Join the Adventure</h1>
-                            <p class="text-gray-600">Create your account to start hunting</p>
-                        </div>
-                        
-                        <div class="bg-white rounded-2xl shadow-xl p-8">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Create Account</h2>
-                            
-                            <form id="registerForm" class="space-y-4">
-                                <div>
-                                    <label class="block text-gray-700 text-sm font-medium mb-2" for="regName">
-                                        Full Name
-                                    </label>
-                                    <input type="text" id="regName" name="name" required
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                                           placeholder="John Doe">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-gray-700 text-sm font-medium mb-2" for="regEmail">
-                                        Email Address
-                                    </label>
-                                    <input type="email" id="regEmail" name="email" required
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                                           placeholder="you@example.com">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-gray-700 text-sm font-medium mb-2" for="regPassword">
-                                        Password
-                                    </label>
-                                    <input type="password" id="regPassword" name="password" required minlength="6"
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                                           placeholder="••••••••">
-                                    <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-gray-700 text-sm font-medium mb-2" for="regConfirm">
-                                        Confirm Password
-                                    </label>
-                                    <input type="password" id="regConfirm" name="confirm" required
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                                           placeholder="••••••••">
-                                </div>
-                                
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="terms" required class="h-4 w-4 text-green-600 rounded">
-                                    <label for="terms" class="ml-2 text-sm text-gray-600">
-                                        I agree to the <a href="#" class="text-green-600 hover:text-green-800">Terms & Conditions</a>
-                                    </label>
-                                </div>
-                                
-                                <button type="submit" id="registerBtn"
-                                        class="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                                    <span id="registerText">Create Account</span>
-                                    <div id="registerLoader" class="loader hidden"></div>
-                                </button>
-                                
-                                <div class="text-center text-sm text-gray-600">
-                                    Already have an account? 
-                                    <a href="#login" onclick="navigateTo('login')" class="text-green-600 font-semibold hover:text-green-800">Sign in</a>
-                                </div>
-                            </form>
-                            
-                            <div id="registerMessage" class="mt-4 hidden"></div>
-                        </div>
-                        
-                        <div class="text-center mt-6">
-                            <a href="#dashboard" onclick="navigateTo('dashboard')" class="text-gray-600 hover:text-gray-800">
-                                <i class="fas fa-home mr-2"></i>Return to Home
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = content;
-            
-            // Add form submission handler
-            document.getElementById('registerForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const name = document.getElementById('regName').value;
-                const email = document.getElementById('regEmail').value;
-                const password = document.getElementById('regPassword').value;
-                const confirm = document.getElementById('regConfirm').value;
-                
-                const registerBtn = document.getElementById('registerBtn');
-                const registerText = document.getElementById('registerText');
-                const registerLoader = document.getElementById('registerLoader');
-                const messageDiv = document.getElementById('registerMessage');
-                
-                if (password !== confirm) {
-                    messageDiv.innerHTML = `
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            Passwords do not match!
-                        </div>
-                    `;
-                    messageDiv.classList.remove('hidden');
-                    return;
-                }
-                
-                registerBtn.disabled = true;
-                registerText.classList.add('hidden');
-                registerLoader.classList.remove('hidden');
-                messageDiv.classList.add('hidden');
-                
-                try {
-                    const { user } = await signUp(email, password, name);
-                    
-                    messageDiv.innerHTML = `
-                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            Account created successfully! Please check your email to verify your account.
-                        </div>
-                    `;
-                    messageDiv.classList.remove('hidden');
-                    
-                    // Update user name in public.users table
-                    setTimeout(async () => {
-                        await supabase
-                            .from('users')
-                            .update({ name })
-                            .eq('email', email);
-                            
-                        setTimeout(() => {
-                            navigateTo('login');
-                        }, 3000);
-                    }, 1000);
-                    
-                } catch (error) {
-                    messageDiv.innerHTML = `
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            ${error.message}
-                        </div>
-                    `;
-                    messageDiv.classList.remove('hidden');
-                    
-                    registerBtn.disabled = false;
-                    registerText.classList.remove('hidden');
-                    registerLoader.classList.add('hidden');
-                }
-            });
-        }
-        
-        async function renderMissionsPage() {
-            const isLoggedIn = await checkAuth();
-            
-            if (!isLoggedIn) {
-                renderLoginPage();
-                return;
-            }
-            
-            // Get all missions with user status
-            const { data: missions } = await supabase
-                .from('missions')
-                .select(`
-                    *,
-                    zones(name)
-                `)
-                .eq('active', true)
-                .order('created_at', { ascending: false });
-                
-            const { data: userMissions } = await supabase
-                .from('user_missions')
-                .select('*')
-                .eq('user_id', currentUser.id);
-                
-            const missionMap = {};
-            userMissions?.forEach(um => {
-                missionMap[um.mission_id] = um;
-            });
-            
-            const nav = await renderNavbar();
-            const content = `
-                <div class="min-h-screen fade-in">
-                    ${nav}
-                    <div class="container mx-auto px-4 py-8">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <h1 class="text-3xl font-bold text-gray-800">Available Missions</h1>
-                                <p class="text-gray-600 mt-2">Complete missions to earn coins and points</p>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <div class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full font-semibold">
-                                    <i class="fas fa-coins mr-2"></i>${currentUser?.coins || 0} coins
-                                </div>
-                                <button onclick="navigateTo('dashboard')" 
-                                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                                    <i class="fas fa-home mr-2"></i>Dashboard
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                            <!-- Sidebar -->
-                            <div class="lg:col-span-1">
-                                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                                    <h3 class="font-semibold text-lg text-gray-800 mb-4">Mission Status</h3>
-                                    <div class="space-y-3">
-                                        <div class="flex items-center">
-                                            <div class="w-3 h-3 bg-gray-400 rounded-full mr-3"></div>
-                                            <span>Available: ${missions?.filter(m => !missionMap[m.id]).length || 0}</span>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-                                            <span>Started: ${userMissions?.filter(um => um.status === 'started').length || 0}</span>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
-                                            <span>Submitted: ${userMissions?.filter(um => um.status === 'submitted').length || 0}</span>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                                            <span>Completed: ${userMissions?.filter(um => um.status === 'completed').length || 0}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="bg-white rounded-lg shadow p-6">
-                                    <h3 class="font-semibold text-lg text-gray-800 mb-4">Quick Tips</h3>
-                                    <ul class="space-y-3 text-sm text-gray-600">
-                                        <li class="flex items-start">
-                                            <i class="fas fa-camera text-blue-500 mt-1 mr-2"></i>
-                                            <span>Take clear photos as proof</span>
-                                        </li>
-                                        <li class="flex items-start">
-                                            <i class="fas fa-map-marker-alt text-green-500 mt-1 mr-2"></i>
-                                            <span>Enable GPS for location verification</span>
-                                        </li>
-                                        <li class="flex items-start">
-                                            <i class="fas fa-clock text-yellow-500 mt-1 mr-2"></i>
-                                            <span>Some missions have time limits</span>
-                                        </li>
-                                        <li class="flex items-start">
-                                            <i class="fas fa-coins text-yellow-600 mt-1 mr-2"></i>
-                                            <span>Earn bonus coins for quick completion</span>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <!-- Missions Grid -->
-                            <div class="lg:col-span-3">
-                                ${missions?.length ? `
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        ${missions.map(mission => {
-                                            const userMission = missionMap[mission.id];
-                                            const status = userMission?.status || 'available';
-                                            
-                                            const statusConfig = {
-                                                'available': { color: 'gray', text: 'Available', icon: 'fa-lock-open' },
-                                                'started': { color: 'blue', text: 'In Progress', icon: 'fa-play-circle' },
-                                                'submitted': { color: 'yellow', text: 'Submitted', icon: 'fa-clock' },
-                                                'completed': { color: 'green', text: 'Completed', icon: 'fa-check-circle' }
-                                            };
-                                            
-                                            const config = statusConfig[status] || statusConfig.available;
-                                            
-                                            return `
-                                                <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 mission-card">
-                                                    <div class="p-6">
-                                                        <div class="flex justify-between items-start mb-4">
-                                                            <div>
-                                                                <span class="bg-${config.color}-100 text-${config.color}-800 px-3 py-1 rounded-full text-sm font-medium">
-                                                                    <i class="fas ${config.icon} mr-1"></i> ${config.text}
-                                                                </span>
-                                                            </div>
-                                                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm font-bold">
-                                                                ${mission.points} pts
-                                                            </span>
-                                                        </div>
-                                                        
-                                                        <h3 class="text-xl font-bold text-gray-800 mb-3">${mission.title}</h3>
-                                                        <p class="text-gray-600 mb-4">${mission.description}</p>
-                                                        
-                                                        ${mission.instructions ? `
-                                                            <div class="bg-gray-50 p-4 rounded mb-4">
-                                                                <h4 class="font-semibold text-gray-700 mb-2">
-                                                                    <i class="fas fa-info-circle mr-2"></i>Instructions
-                                                                </h4>
-                                                                <p class="text-gray-600 text-sm">${mission.instructions}</p>
-                                                            </div>
-                                                        ` : ''}
-                                                        
-                                                        <div class="flex items-center justify-between text-sm text-gray-500 mb-6">
-                                                            <div class="flex items-center">
-                                                                <i class="fas fa-map-marker-alt mr-2"></i>
-                                                                <span>${mission.zones?.name || 'Unknown Zone'}</span>
-                                                            </div>
-                                                            <div class="flex items-center">
-                                                                <i class="fas fa-${mission.mission_type === 'video' ? 'video' : 'camera'} mr-2"></i>
-                                                                <span>${mission.mission_type === 'video' ? 'Video' : 'Photo'} Mission</span>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        ${status === 'available' ? `
-                                                            <button onclick="startMission('${mission.id}')" 
-                                                                    class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors">
-                                                                <i class="fas fa-play mr-2"></i>Start Mission
-                                                            </button>
-                                                        ` : status === 'started' ? `
-                                                            <div class="space-y-3">
-                                                                <button onclick="submitMission('${mission.id}')" 
-                                                                        class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                                                                    <i class="fas fa-upload mr-2"></i>Submit Proof
-                                                                </button>
-                                                                <button onclick="cancelMission('${mission.id}')" 
-                                                                        class="w-full bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
-                                                                    <i class="fas fa-times mr-2"></i>Cancel Mission
-                                                                </button>
-                                                            </div>
-                                                        ` : status === 'submitted' ? `
-                                                            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded text-center">
-                                                                <i class="fas fa-clock text-yellow-600 text-2xl mb-2"></i>
-                                                                <p class="text-yellow-800 font-semibold">Under Review</p>
-                                                                <p class="text-yellow-600 text-sm mt-1">Your submission is being reviewed by admin</p>
-                                                            </div>
-                                                        ` : status === 'completed' ? `
-                                                            <div class="bg-green-50 border border-green-200 p-4 rounded text-center">
-                                                                <i class="fas fa-check-circle text-green-600 text-2xl mb-2"></i>
-                                                                <p class="text-green-800 font-semibold">Mission Completed!</p>
-                                                                <p class="text-green-600 text-sm mt-1">You earned ${mission.points} points</p>
-                                                            </div>
-                                                        ` : ''}
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                ` : `
-                                    <div class="bg-white rounded-lg shadow p-12 text-center">
-                                        <i class="fas fa-flag text-4xl text-gray-300 mb-4"></i>
-                                        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Missions Available</h3>
-                                        <p class="text-gray-500">Check back later for new missions!</p>
-                                    </div>
-                                `}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = content;
-        }
-        
-        async function submitMission(missionId) {
-            const modalHtml = `
-                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div class="p-6">
-                            <div class="flex justify-between items-center mb-6">
-                                <h3 class="text-xl font-bold text-gray-800">Submit Mission Proof</h3>
-                                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
-                                    <i class="fas fa-times text-2xl"></i>
-                                </button>
-                            </div>
-                            
-                            <form id="submissionForm" class="space-y-4">
-                                <div>
-                                    <label class="block text-gray-700 text-sm font-medium mb-2">
-                                        Upload Photo/Video
-                                    </label>
-                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer"
-                                         onclick="document.getElementById('mediaUpload').click()">
-                                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
-                                        <p class="text-gray-600">Click to upload or drag and drop</p>
-                                        <p class="text-gray-400 text-sm mt-2">PNG, JPG, MP4 up to 10MB</p>
-                                        <input type="file" id="mediaUpload" class="hidden" accept="image/*,video/*">
-                                    </div>
-                                    <div id="preview" class="mt-4 hidden"></div>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-gray-700 text-sm font-medium mb-2">
-                                        Additional Notes
-                                    </label>
-                                    <textarea id="notes" rows="3" 
-                                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                              placeholder="Add any additional information about your submission..."></textarea>
-                                </div>
-                                
-                                <div class="bg-blue-50 p-4 rounded-lg">
-                                    <div class="flex items-start">
-                                        <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
-                                        <div>
-                                            <p class="text-blue-800 font-medium mb-1">Important:</p>
-                                            <p class="text-blue-600 text-sm">Make sure your submission clearly shows the mission requirements. Submissions will be reviewed by admin within 24 hours.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="flex justify-end space-x-4 pt-4">
-                                    <button type="button" onclick="closeModal()" 
-                                            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                                        Cancel
-                                    </button>
-                                    <button type="submit" id="submitBtn"
-                                            class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                                        <span id="submitText">Submit for Review</span>
-                                        <div id="submitLoader" class="loader hidden inline-block ml-2"></div>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            
-            const mediaUpload = document.getElementById('mediaUpload');
-            const previewDiv = document.getElementById('preview');
-            
-            mediaUpload.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        previewDiv.innerHTML = `
-                            <div class="border rounded-lg p-4 bg-gray-50">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="font-medium text-gray-700">${file.name}</span>
-                                    <button onclick="document.getElementById('preview').innerHTML = ''; document.getElementById('mediaUpload').value = '';" 
-                                            class="text-red-500 hover:text-red-700">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                                ${file.type.startsWith('image/') ? `
-                                    <img src="${e.target.result}" class="max-h-48 rounded-lg mx-auto">
-                                ` : file.type.startsWith('video/') ? `
-                                    <video src="${e.target.result}" controls class="max-h-48 rounded-lg mx-auto"></video>
-                                ` : ''}
-                            </div>
-                        `;
-                        previewDiv.classList.remove('hidden');
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            
-            document.getElementById('submissionForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const notes = document.getElementById('notes').value;
-                const file = mediaUpload.files[0];
-                const submitBtn = document.getElementById('submitBtn');
-                const submitText = document.getElementById('submitText');
-                const submitLoader = document.getElementById('submitLoader');
-                
-                if (!file) {
-                    alert('Please upload a photo or video as proof');
-                    return;
-                }
-                
-                submitBtn.disabled = true;
-                submitText.classList.add('hidden');
-                submitLoader.classList.remove('hidden');
-                
-                try {
-                    // Upload file to Supabase Storage
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${missionId}_${currentUser.id}_${Date.now()}.${fileExt}`;
-                    
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                        .from('mission-submissions')
-                        .upload(fileName, file);
-                    
-                    if (uploadError) throw uploadError;
-                    
-                    // Get public URL
-                    const { data: { publicUrl } } = supabase.storage
-                        .from('mission-submissions')
-                        .getPublicUrl(fileName);
-                    
-                    // Create submission record
-                    const { error: submissionError } = await supabase
-                        .from('submissions')
-                        .insert({
-                            user_id: currentUser.id,
-                            mission_id: missionId,
-                            media_url: publicUrl,
-                            status: 'pending',
-                            admin_notes: notes
-                        });
-                    
-                    if (submissionError) throw submissionError;
-                    
-                    // Update user mission status
-                    const { error: missionError } = await supabase
-                        .from('user_missions')
-                        .update({ status: 'submitted' })
-                        .eq('user_id', currentUser.id)
-                        .eq('mission_id', missionId);
-                    
-                    if (missionError) throw missionError;
-                    
-                    alert('Submission submitted successfully! It will be reviewed by admin.');
-                    closeModal();
-                    navigateTo('submissions');
-                    
-                } catch (error) {
-                    alert('Error submitting mission: ' + error.message);
-                    submitBtn.disabled = false;
-                    submitText.classList.remove('hidden');
-                    submitLoader.classList.add('hidden');
-                }
-            });
-        }
-        
-        function closeModal() {
-            const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
-            if (modal) modal.remove();
-        }
-        
-        async function cancelMission(missionId) {
-            if (!confirm('Are you sure you want to cancel this mission?')) return;
-            
-            const { error } = await supabase
-                .from('user_missions')
-                .delete()
-                .eq('user_id', currentUser.id)
-                .eq('mission_id', missionId);
-                
-            if (error) {
-                alert('Error canceling mission: ' + error.message);
-                return;
-            }
-            
-            alert('Mission canceled successfully!');
-            renderMissionsPage();
-        }
-        
-        async function renderSubmissionsPage() {
-            const isLoggedIn = await checkAuth();
-            
-            if (!isLoggedIn) {
-                renderLoginPage();
-                return;
-            }
-            
-            // Get user submissions
-            const { data: submissions } = await supabase
-                .from('submissions')
-                .select(`
-                    *,
-                    missions(title, points)
-                `)
-                .eq('user_id', currentUser.id)
-                .order('created_at', { ascending: false });
-            
-            const nav = await renderNavbar();
-            const content = `
-                <div class="min-h-screen fade-in">
-                    ${nav}
-                    <div class="container mx-auto px-4 py-8">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <h1 class="text-3xl font-bold text-gray-800">My Submissions</h1>
-                                <p class="text-gray-600 mt-2">Track your submitted mission proofs</p>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-semibold">
-                                    <i class="fas fa-history mr-2"></i>${submissions?.length || 0} Submissions
-                                </div>
-                                <button onclick="navigateTo('missions')" 
-                                        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                                    <i class="fas fa-plus mr-2"></i>New Submission
-                                </button>
-                            </div>
-                        </div>
-                        
-                        ${submissions?.length ? `
-                            <div class="bg-white rounded-lg shadow overflow-hidden">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Mission
-                                            </th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Submitted
-                                            </th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Points
-                                            </th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200">
-                                        ${submissions.map(submission => {
-                                            const statusColors = {
-                                                'pending': 'bg-yellow-100 text-yellow-800',
-                                                'approved': 'bg-green-100 text-green-800',
-                                                'rejected': 'bg-red-100 text-red-800'
-                                            };
-                                            
-                                            const statusText = {
-                                                'pending': 'Under Review',
-                                                'approved': 'Approved',
-                                                'rejected': 'Rejected'
-                                            };
-                                            
-                                            return `
-                                                <tr class="hover:bg-gray-50">
-                                                    <td class="px-6 py-4 whitespace-nowrap">
-                                                        <div class="text-sm font-medium text-gray-900">
-                                                            ${submission.missions?.title || 'Unknown Mission'}
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap">
-                                                        <div class="text-sm text-gray-500">
-                                                            ${new Date(submission.created_at).toLocaleDateString()}
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap">
-                                                        <span class="px-3 py-1 rounded-full text-xs font-medium ${statusColors[submission.status] || 'bg-gray-100 text-gray-800'}">
-                                                            ${statusText[submission.status] || submission.status}
-                                                        </span>
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap">
-                                                        <div class="text-sm text-gray-900">
-                                                            ${submission.status === 'approved' ? (submission.missions?.points || 0) : '-'}
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                        <button onclick="viewSubmission('${submission.id}')" 
-                                                                class="text-blue-600 hover:text-blue-900 mr-4">
-                                                            <i class="fas fa-eye mr-1"></i>View
-                                                        </button>
-                                                        ${submission.status === 'pending' ? `
-                                                            <button onclick="cancelSubmission('${submission.id}')" 
-                                                                    class="text-red-600 hover:text-red-900">
-                                                                <i class="fas fa-trash mr-1"></i>Cancel
-                                                            </button>
-                                                        ` : ''}
-                                                    </td>
-                                                </tr>
-                                            `;
-                                        }).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ` : `
-                            <div class="bg-white rounded-lg shadow p-12 text-center">
-                                <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
-                                <h3 class="text-xl font-semibold text-gray-700 mb-2">No Submissions Yet</h3>
-                                <p class="text-gray-500 mb-6">Start completing missions to see your submissions here!</p>
-                                <button onclick="navigateTo('missions')" 
-                                        class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700">
-                                    <i class="fas fa-flag mr-2"></i>Browse Missions
-                                </button>
-                            </div>
-                        `}
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = content;
-        }
-        
-        async function renderPrizesPage() {
-            const isLoggedIn = await checkAuth();
-            
-            if (!isLoggedIn) {
-                renderLoginPage();
-                return;
-            }
-            
-            // Get available prizes
-            const { data: prizes } = await supabase
-                .from('prizes')
-                .select('*')
-                .eq('active', true)
-                .order('price', { ascending: true });
-            
-            // Get user purchases
-            const { data: purchases } = await supabase
-                .from('purchases')
-                .select(`
-                    *,
-                    prizes(name, image_url)
-                `)
-                .eq('user_id', currentUser.id)
-                .order('created_at', { ascending: false });
-            
-            const nav = await renderNavbar();
-            const content = `
-                <div class="min-h-screen fade-in">
-                    ${nav}
-                    <div class="container mx-auto px-4 py-8">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <h1 class="text-3xl font-bold text-gray-800">Prize Shop</h1>
-                                <p class="text-gray-600 mt-2">Exchange your coins for amazing rewards</p>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <div class="bg-yellow-500 text-white px-6 py-3 rounded-full font-bold text-xl shadow-lg">
-                                    <i class="fas fa-coins mr-2"></i>${currentUser?.coins || 0}
-                                </div>
-                                <button onclick="navigateTo('dashboard')" 
-                                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                                    <i class="fas fa-home mr-2"></i>Dashboard
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <!-- Prizes -->
-                            <div class="lg:col-span-2">
-                                <h2 class="text-2xl font-bold text-gray-800 mb-6">Available Prizes</h2>
-                                
-                                ${prizes?.length ? `
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        ${prizes.map(prize => {
-                                            const canAfford = currentUser.coins >= prize.price;
-                                            const isOutOfStock = prize.remaining_quantity <= 0;
-                                            
-                                            return `
-                                                <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-                                                    ${prize.image_url ? `
-                                                        <div class="h-48 bg-gray-200 overflow-hidden">
-                                                            <img src="${prize.image_url}" alt="${prize.name}" class="w-full h-full object-cover">
-                                                        </div>
-                                                    ` : `
-                                                        <div class="h-48 bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center">
-                                                            <i class="fas fa-gift text-6xl text-gray-400"></i>
-                                                        </div>
-                                                    `}
-                                                    
-                                                    <div class="p-6">
-                                                        <div class="flex justify-between items-start mb-4">
-                                                            <h3 class="text-xl font-bold text-gray-800">${prize.name}</h3>
-                                                            <div class="text-right">
-                                                                <div class="text-2xl font-bold text-yellow-600">${prize.price}</div>
-                                                                <div class="text-sm text-gray-500">coins</div>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <p class="text-gray-600 mb-6">${prize.description || 'No description available.'}</p>
-                                                        
-                                                        <div class="flex justify-between items-center mb-6">
-                                                            <div class="text-sm text-gray-500">
-                                                                <i class="fas fa-box mr-1"></i>
-                                                                ${prize.remaining_quantity} of ${prize.total_quantity} left
-                                                            </div>
-                                                            ${isOutOfStock ? `
-                                                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
-                                                                    Out of Stock
-                                                                </span>
-                                                            ` : ''}
-                                                        </div>
-                                                        
-                                                        <button onclick="purchasePrize('${prize.id}', ${prize.price}, ${prize.remaining_quantity})" 
-                                                                class="w-full py-3 rounded-lg font-semibold transition-colors 
-                                                                       ${!canAfford || isOutOfStock ? 
-                                                                         'bg-gray-300 text-gray-500 cursor-not-allowed' : 
-                                                                         'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700'}"
-                                                                ${!canAfford || isOutOfStock ? 'disabled' : ''}>
-                                                            ${!canAfford ? 'Not Enough Coins' : 
-                                                              isOutOfStock ? 'Out of Stock' : 
-                                                              `Purchase for ${prize.price} coins`}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                ` : `
-                                    <div class="bg-white rounded-lg shadow p-12 text-center">
-                                        <i class="fas fa-gift text-4xl text-gray-300 mb-4"></i>
-                                        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Prizes Available</h3>
-                                        <p class="text-gray-500">Check back later for new prizes!</p>
-                                    </div>
-                                `}
-                            </div>
-                            
-                            <!-- Purchase History -->
-                            <div class="lg:col-span-1">
-                                <div class="bg-white rounded-lg shadow p-6 sticky top-8">
-                                    <h3 class="text-xl font-bold text-gray-800 mb-6">Purchase History</h3>
-                                    
-                                    ${purchases?.length ? `
-                                        <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                                            ${purchases.map(purchase => `
-                                                <div class="border rounded-lg p-4 hover:bg-gray-50">
-                                                    <div class="flex items-start justify-between mb-2">
-                                                        <div class="font-medium text-gray-900">${purchase.prizes?.name || 'Unknown Prize'}</div>
-                                                        <div class="text-sm text-gray-500">
-                                                            ${new Date(purchase.created_at).toLocaleDateString()}
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex justify-between items-center">
-                                                        <div class="text-sm text-gray-600">
-                                                            Status: 
-                                                            <span class="font-medium ${purchase.status === 'completed' ? 'text-green-600' : 'text-yellow-600'}">
-                                                                ${purchase.status}
-                                                            </span>
-                                                        </div>
-                                                        <div class="text-yellow-600 font-bold">
-                                                            ${purchase.total_price} coins
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    ` : `
-                                        <div class="text-center py-8">
-                                            <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-4"></i>
-                                            <p class="text-gray-500">No purchases yet</p>
-                                        </div>
-                                    `}
-                                    
-                                    <div class="mt-8 pt-6 border-t border-gray-200">
-                                        <h4 class="font-semibold text-gray-700 mb-4">How it works:</h4>
-                                        <ul class="space-y-3 text-sm text-gray-600">
-                                            <li class="flex items-start">
-                                                <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
-                                                <span>Complete missions to earn coins</span>
-                                            </li>
-                                            <li class="flex items-start">
-                                                <i class="fas fa-shopping-cart text-blue-500 mt-1 mr-2"></i>
-                                                <span>Browse available prizes</span>
-                                            </li>
-                                            <li class="flex items-start">
-                                                <i class="fas fa-exchange-alt text-purple-500 mt-1 mr-2"></i>
-                                                <span>Exchange coins for prizes</span>
-                                            </li>
-                                            <li class="flex items-start">
-                                                <i class="fas fa-box-open text-yellow-500 mt-1 mr-2"></i>
-                                                <span>Collect your rewards!</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = content;
-        }
-        
-        async function purchasePrize(prizeId, price, remainingQuantity) {
-            if (remainingQuantity <= 0) {
-                alert('This prize is out of stock!');
-                return;
-            }
-            
-            if (currentUser.coins < price) {
-                alert(`You need ${price - currentUser.coins} more coins to purchase this item!`);
-                return;
-            }
-            
-            if (!confirm(`Purchase this item for ${price} coins?`)) return;
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
             
             try {
-                // Start transaction
-                const { error: purchaseError } = await supabase
-                    .from('purchases')
-                    .insert({
-                        user_id: currentUser.id,
-                        prize_id: prizeId,
-                        total_price: price,
-                        status: 'pending'
-                    });
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                currentUser = data.user;
+                await loadUserProfile();
+                showMainApp();
+                showToast('Welcome to the Experience!', 'success');
+                startEventTimer();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        async function handleSignup(e) {
+            e.preventDefault();
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const team = document.getElementById('signupTeam').value;
+            
+            try {
+                // Sign up with Supabase Auth
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: { name, team }
+                    }
+                });
                 
-                if (purchaseError) throw purchaseError;
+                if (authError) throw authError;
                 
-                // Update user coins
-                const { error: userError } = await supabase
-                    .from('users')
-                    .update({ coins: currentUser.coins - price })
-                    .eq('id', currentUser.id);
+                // Create user profile in database
+                const { error: profileError } = await supabase.from('users').insert([{
+                    id: authData.user.id,
+                    email,
+                    name,
+                    team_name: team || null,
+                    coins: 100,
+                    is_admin: false
+                }]);
                 
-                if (userError) throw userError;
+                if (profileError) {
+                    // If user already exists, just update
+                    await supabase
+                        .from('users')
+                        .update({ 
+                            name,
+                            team_name: team || null,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('email', email);
+                }
                 
-                // Update prize quantity
-                const { error: prizeError } = await supabase
-                    .from('prizes')
-                    .update({ remaining_quantity: remainingQuantity - 1 })
-                    .eq('id', prizeId);
+                showToast('Account created successfully! You can now log in.', 'success');
                 
-                if (prizeError) throw prizeError;
-                
-                // Update current user object
-                currentUser.coins -= price;
-                window.currentUser = currentUser;
-                
-                alert('Purchase successful! Your item will be processed soon.');
-                renderPrizesPage();
+                // Auto fill login form
+                document.getElementById('loginEmail').value = email;
+                document.getElementById('loginPassword').value = password;
                 
             } catch (error) {
-                alert('Error purchasing prize: ' + error.message);
+                showError(error.message);
             }
         }
         
-        async function renderSOSPage() {
-            const isLoggedIn = await checkAuth();
-            
-            if (!isLoggedIn) {
-                renderLoginPage();
-                return;
-            }
-            
-            // Get user's SOS alerts
-            const { data: sosAlerts } = await supabase
-                .from('sos_alerts')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('created_at', { ascending: false });
-            
-            const nav = await renderNavbar();
-            const content = `
-                <div class="min-h-screen fade-in">
-                    ${nav}
-                    <div class="container mx-auto px-4 py-8">
-                        <div class="text-center mb-12">
-                            <h1 class="text-4xl font-bold text-gray-800 mb-4">Emergency SOS</h1>
-                            <p class="text-gray-600 max-w-2xl mx-auto">
-                                Use this feature only in case of emergencies. Your location will be shared with game administrators who will provide assistance.
-                            </p>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <!-- SOS Button -->
-                            <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl shadow-xl p-8 border border-red-100">
-                                <div class="text-center mb-8">
-                                    <div class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6 sos-btn">
-                                        <i class="fas fa-exclamation-triangle text-4xl text-white"></i>
-                                    </div>
-                                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Need Emergency Help?</h2>
-                                    <p class="text-gray-600">Press the button below to send an alert</p>
-                                </div>
-                                
-                                <div class="space-y-4">
-                                    <div class="bg-white rounded-lg p-4">
-                                        <label class="block text-gray-700 text-sm font-medium mb-2">
-                                            Emergency Message (Optional)
-                                        </label>
-                                        <textarea id="sosMessage" rows="3" 
-                                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
-                                                  placeholder="Describe your emergency..."></textarea>
-                                    </div>
-                                    
-                                    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                                        <div class="flex items-start">
-                                            <i class="fas fa-exclamation-circle text-yellow-500 mt-1 mr-3"></i>
-                                            <div>
-                                                <p class="text-yellow-800 font-medium mb-1">Important Notice:</p>
-                                                <p class="text-yellow-600 text-sm">
-                                                    Only use this feature for genuine emergencies. False alerts may result in account suspension.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <button onclick="sendSOSAlert()" id="sosButton"
-                                            class="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-red-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl">
-                                        <i class="fas fa-bell mr-2"></i>
-                                        <span id="sosButtonText">SEND EMERGENCY ALERT</span>
-                                        <div id="sosLoader" class="loader hidden inline-block ml-2"></div>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- SOS History -->
-                            <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
-                                <h2 class="text-2xl font-bold text-gray-800 mb-6">Your SOS History</h2>
-                                
-                                ${sosAlerts?.length ? `
-                                    <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                                        ${sosAlerts.map(alert => {
-                                            const statusColors = {
-                                                'active': 'bg-red-100 text-red-800',
-                                                'resolved': 'bg-green-100 text-green-800',
-                                                'cancelled': 'bg-gray-100 text-gray-800'
-                                            };
-                                            
-                                            return `
-                                                <div class="border rounded-xl p-5 hover:bg-gray-50 transition-colors">
-                                                    <div class="flex justify-between items-start mb-3">
-                                                        <div>
-                                                            <div class="flex items-center mb-2">
-                                                                <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColors[alert.status] || 'bg-gray-100 text-gray-800'}">
-                                                                    ${alert.status === 'active' ? 'Active' : 
-                                                                      alert.status === 'resolved' ? 'Resolved' : 'Cancelled'}
-                                                                </span>
-                                                                <span class="mx-2">•</span>
-                                                                <span class="text-sm text-gray-500">
-                                                                    ${new Date(alert.created_at).toLocaleString()}
-                                                                </span>
-                                                            </div>
-                                                            ${alert.message ? `
-                                                                <p class="text-gray-700">${alert.message}</p>
-                                                            ` : `
-                                                                <p class="text-gray-500 italic">No message provided</p>
-                                                            `}
-                                                        </div>
-                                                        <i class="fas fa-exclamation-triangle text-xl ${alert.status === 'active' ? 'text-red-500' : 'text-gray-400'}"></i>
-                                                    </div>
-                                                    
-                                                    ${alert.resolved_at ? `
-                                                        <div class="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-600">
-                                                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                                            Resolved on ${new Date(alert.resolved_at).toLocaleString()}
-                                                        </div>
-                                                    ` : ''}
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                ` : `
-                                    <div class="text-center py-12">
-                                        <i class="fas fa-shield-alt text-4xl text-gray-300 mb-4"></i>
-                                        <h3 class="text-xl font-semibold text-gray-700 mb-2">No SOS Alerts</h3>
-                                        <p class="text-gray-500">You haven't sent any emergency alerts yet.</p>
-                                    </div>
-                                `}
-                                
-                                <div class="mt-8 pt-6 border-t border-gray-200">
-                                    <h4 class="font-semibold text-gray-700 mb-4">Emergency Contacts:</h4>
-                                    <div class="space-y-3">
-                                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                                            <div class="flex items-center">
-                                                <i class="fas fa-phone-alt text-blue-500 mr-3"></i>
-                                                <div>
-                                                    <p class="font-medium text-gray-800">Game Administrators</p>
-                                                    <p class="text-sm text-gray-600">Available 24/7</p>
-                                                </div>
-                                            </div>
-                                            <button class="text-blue-600 hover:text-blue-800">
-                                                <i class="fas fa-info-circle"></i>
-                                            </button>
-                                        </div>
-                                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                                            <div class="flex items-center">
-                                                <i class="fas fa-ambulance text-green-500 mr-3"></i>
-                                                <div>
-                                                    <p class="font-medium text-gray-800">Local Emergency</p>
-                                                    <p class="text-sm text-gray-600">911 / 112</p>
-                                                </div>
-                                            </div>
-                                            <button class="text-green-600 hover:text-green-800">
-                                                <i class="fas fa-phone"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = content;
+        async function handleLogout() {
+            await supabase.auth.signOut();
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            if (eventTimerInterval) clearInterval(eventTimerInterval);
+            location.reload();
         }
         
-        async function sendSOSAlert() {
-            if (!confirm('Are you sure you want to send an emergency alert? This will notify all game administrators.')) {
-                return;
-            }
-            
-            const message = document.getElementById('sosMessage').value;
-            const sosButton = document.getElementById('sosButton');
-            const sosButtonText = document.getElementById('sosButtonText');
-            const sosLoader = document.getElementById('sosLoader');
-            
-            sosButton.disabled = true;
-            sosButtonText.classList.add('hidden');
-            sosLoader.classList.remove('hidden');
-            
+        // ============================
+        // USER PROFILE
+        // ============================
+        async function loadUserProfile() {
             try {
-                // Get current location if possible
-                let location = null;
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            location = {
-                                type: 'Point',
-                                coordinates: [position.coords.longitude, position.coords.latitude],
-                                accuracy: position.coords.accuracy
-                            };
-                        },
-                        (error) => {
-                            console.warn('Geolocation error:', error);
-                        }
-                    );
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (error) {
+                    // Create profile if it doesn't exist
+                    const name = currentUser.user_metadata?.name || 'Player';
+                    const team = currentUser.user_metadata?.team || null;
+                    
+                    const { data: newProfile, error: createError } = await supabase
+                        .from('users')
+                        .insert([{
+                            id: currentUser.id,
+                            email: currentUser.email,
+                            name,
+                            team_name: team,
+                            coins: 100,
+                            is_admin: false
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (createError) throw createError;
+                    userProfile = newProfile;
+                } else {
+                    userProfile = data;
                 }
                 
-                // Create SOS alert
-                const { error } = await supabase
-                    .from('sos_alerts')
-                    .insert({
-                        user_id: currentUser.id,
-                        message: message,
-                        location: location,
-                        status: 'active'
-                    });
+                updateUI();
+                loadNotifications();
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                userProfile = {
+                    id: currentUser.id,
+                    name: currentUser.user_metadata?.name || 'Player',
+                    email: currentUser.email,
+                    coins: 100,
+                    team_name: currentUser.user_metadata?.team || null,
+                    is_admin: false
+                };
+                updateUI();
+            }
+        }
+        
+        function updateUI() {
+            if (userProfile) {
+                document.getElementById('coinDisplay').textContent = userProfile.coins;
+                document.getElementById('profileName').textContent = userProfile.name;
+                document.getElementById('profileEmail').textContent = userProfile.email;
+                document.getElementById('profileTeam').textContent = `Team: ${userProfile.team_name || 'None'}`;
+                document.getElementById('profileCoins').textContent = userProfile.coins;
+            }
+        }
+        
+        // ============================
+        // EVENT TIMER
+        // ============================
+        function startEventTimer() {
+            const eventEnd = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours from now
+            eventTimerInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = eventEnd - now;
+                if (distance <= 0) {
+                    clearInterval(eventTimerInterval);
+                    document.getElementById('eventTimer').textContent = 'Event Ended';
+                    return;
+                }
+                const hours = Math.floor(distance / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                document.getElementById('eventTimer').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+        
+        // ============================
+        // MAIN APP
+        // ============================
+        function showMainApp() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            initializeMap();
+            startLocationTracking();
+            loadZones();
+            loadMissions();
+            loadLeaderboard();
+            loadShopItems();
+            showHome();
+            setupRealtimeSubscriptions();
+        }
+        
+        // ============================
+        // REAL-TIME SUBSCRIPTIONS
+        // ============================
+        function setupRealtimeSubscriptions() {
+            // Subscribe to notifications
+            supabase
+                .channel('player-notifications')
+                .on('postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${currentUser.id}` },
+                    async () => {
+                        await loadNotifications();
+                    }
+                )
+                .subscribe();
+            
+            // Subscribe to mission updates
+            supabase
+                .channel('player-missions')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'missions' },
+                    async () => {
+                        await loadMissions();
+                    }
+                )
+                .subscribe();
+            
+            // Subscribe to prize updates
+            supabase
+                .channel('player-prizes')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'prizes' },
+                    async () => {
+                        await loadShopItems();
+                    }
+                )
+                .subscribe();
+            
+            // Subscribe to user updates
+            supabase
+                .channel('player-profile')
+                .on('postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${currentUser.id}` },
+                    async (payload) => {
+                        if (payload.new.coins !== userProfile.coins) {
+                            userProfile.coins = payload.new.coins;
+                            updateUI();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+        
+        // ============================
+        // MAP INTEGRATION
+        // ============================
+        function initializeMap() {
+            try {
+                map = new mapboxgl.Map({
+                    container: 'map',
+                    style: 'mapbox://styles/mapbox/dark-v11',
+                    center: [-122.4194, 37.7749],
+                    zoom: 13,
+                    attributionControl: false
+                });
+                
+                map.addControl(new mapboxgl.NavigationControl());
+                map.addControl(new mapboxgl.AttributionControl({ compact: true }));
+                
+                map.on('load', () => {
+                    loadZonesToMap();
+                });
+                
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                document.getElementById('map').innerHTML = `
+                    <div class="w-full h-full flex items-center justify-center vercel-card">
+                        <div class="text-center p-4">
+                            <i class="fas fa-map text-4xl text-gray-400 mb-3"></i>
+                            <p class="text-gray-400">Map initialized</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function startLocationTracking() {
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(
+                    position => {
+                        currentPosition = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        updateUserMarker(currentPosition);
+                        checkZoneProximity(currentPosition);
+                    },
+                    error => {
+                        console.log('Using default location');
+                        currentPosition = { lat: 37.7749, lng: -122.4194 };
+                        updateUserMarker(currentPosition);
+                    },
+                    { enableHighAccuracy: true, maximumAge: 10000 }
+                );
+            } else {
+                currentPosition = { lat: 37.7749, lng: -122.4194 };
+                updateUserMarker(currentPosition);
+            }
+        }
+        
+        function updateUserMarker(position) {
+            if (!map) return;
+            if (userMarker) {
+                userMarker.setLngLat([position.lng, position.lat]);
+            } else {
+                const el = document.createElement('div');
+                el.className = 'w-6 h-6 bg-blue-500 rounded-full border-2 border-white animate-pulse';
+                userMarker = new mapboxgl.Marker(el)
+                    .setLngLat([position.lng, position.lat])
+                    .addTo(map);
+                map.flyTo({ center: [position.lng, position.lat], zoom: 15 });
+            }
+        }
+        
+        // ============================
+        // ZONES
+        // ============================
+        async function loadZones() {
+            try {
+                const { data, error } = await supabase
+                    .from('zones')
+                    .select('*')
+                    .eq('active', true);
+                
+                if (error) throw error;
+                zones = data || [];
+                document.getElementById('zoneCount').textContent = zones.length;
+                if (map && map.loaded()) loadZonesToMap();
+            } catch (error) {
+                console.log('Error loading zones:', error);
+                zones = [];
+            }
+        }
+        
+        function loadZonesToMap() {
+            if (!map || !map.loaded()) return;
+            
+            // Clear existing zones
+            zones.forEach(zone => {
+                try {
+                    const sourceId = `zone-${zone.id}`;
+                    const fillId = `zone-fill-${zone.id}`;
+                    const outlineId = `zone-outline-${zone.id}`;
+                    
+                    if (map.getLayer(fillId)) map.removeLayer(fillId);
+                    if (map.getLayer(outlineId)) map.removeLayer(outlineId);
+                    if (map.getSource(sourceId)) map.removeSource(sourceId);
+                } catch (e) {
+                    // Layer might not exist yet
+                }
+            });
+            
+            // Add new zones
+            zones.forEach(zone => addZoneToMap(zone));
+        }
+        
+        function addZoneToMap(zone) {
+            try {
+                if (!zone.coordinates) return;
+                const sourceId = `zone-${zone.id}`;
+                const fillId = `zone-fill-${zone.id}`;
+                const outlineId = `zone-outline-${zone.id}`;
+                
+                if (map.getSource(sourceId)) return;
+                
+                map.addSource(sourceId, {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        geometry: zone.coordinates
+                    }
+                });
+                
+                map.addLayer({
+                    id: fillId,
+                    type: 'fill',
+                    source: sourceId,
+                    paint: {
+                        'fill-color': '#3b82f6',
+                        'fill-opacity': 0.2
+                    }
+                });
+                
+                map.addLayer({
+                    id: outlineId,
+                    type: 'line',
+                    source: sourceId,
+                    paint: {
+                        'line-color': '#3b82f6',
+                        'line-width': 2
+                    }
+                });
+                
+                // Add popup
+                const coordinates = zone.coordinates.coordinates[0];
+                const center = coordinates.reduce((acc, coord) => {
+                    return { lng: acc.lng + coord[0] / coordinates.length, lat: acc.lat + coord[1] / coordinates.length };
+                }, { lng: 0, lat: 0 });
+                
+                const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
+                    <div class="p-2">
+                        <h3 class="font-bold">${zone.name}</h3>
+                        <p class="text-sm text-gray-300">${zone.description || 'Game zone'}</p>
+                        <p class="text-xs text-gray-400 mt-1">Radius: ${zone.radius_meters}m</p>
+                    </div>
+                `);
+                
+                new mapboxgl.Marker({ color: '#3b82f6' })
+                    .setLngLat([center.lng, center.lat])
+                    .setPopup(popup)
+                    .addTo(map);
+                
+            } catch (error) {
+                console.error('Error adding zone:', error);
+            }
+        }
+        
+        function checkZoneProximity(position) {
+            zones.forEach(zone => {
+                const zoneCenter = getZoneCenter(zone);
+                if (zoneCenter) {
+                    const distance = getDistance(position.lat, position.lng, zoneCenter.lat, zoneCenter.lng);
+                    const radiusInDegrees = zone.radius_meters / 111320;
+                    if (distance <= radiusInDegrees) {
+                        unlockZoneMissions(zone.id);
+                    }
+                }
+            });
+        }
+        
+        function getZoneCenter(zone) {
+            if (!zone.coordinates || !zone.coordinates.coordinates) return null;
+            const coords = zone.coordinates.coordinates[0];
+            const center = coords.reduce((acc, coord) => {
+                return { lat: acc.lat + coord[1] / coords.length, lng: acc.lng + coord[0] / coords.length };
+            }, { lat: 0, lng: 0 });
+            return center;
+        }
+        
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                     Math.cos(φ1) * Math.cos(φ2) *
+                     Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // ============================
+        // MISSIONS
+        // ============================
+        async function unlockZoneMissions(zoneId) {
+            try {
+                const { data: missionsData, error } = await supabase
+                    .from('missions')
+                    .select('*')
+                    .eq('zone_id', zoneId)
+                    .eq('active', true);
+                
+                if (error) throw error;
+                if (missionsData && missionsData.length > 0) {
+                    const { data: existingMissions } = await supabase
+                        .from('user_missions')
+                        .select('mission_id')
+                        .eq('user_id', currentUser.id);
+                    
+                    const existingIds = existingMissions ? existingMissions.map(em => em.mission_id) : [];
+                    const newMissions = missionsData.filter(m => !existingIds.includes(m.id));
+                    
+                    if (newMissions.length > 0) {
+                        const userMissionsToInsert = newMissions.map(mission => ({
+                            user_id: currentUser.id,
+                            mission_id: mission.id,
+                            status: 'unlocked'
+                        }));
+                        
+                        await supabase.from('user_missions').insert(userMissionsToInsert);
+                        missions = [...missions, ...newMissions];
+                        showToast(`${newMissions.length} new missions unlocked!`, 'success');
+                        updateMissionsList();
+                        await createNotification('New Missions!', `Unlocked ${newMissions.length} missions in this zone.`, 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('Error unlocking missions:', error);
+            }
+        }
+        
+        async function loadMissions() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_missions')
+                    .select(`
+                        *,
+                        missions (*)
+                    `)
+                    .eq('user_id', currentUser.id)
+                    .in('status', ['unlocked', 'pending', 'completed']);
+                
+                if (error) throw error;
+                if (data) {
+                    userMissions = data;
+                    missions = data.map(um => um.missions).filter(m => m);
+                    updateMissionsList();
+                    loadAllMissions(); // Also update the missions page
+                }
+            } catch (error) {
+                console.log('Error loading missions:', error);
+                missions = [];
+                updateMissionsList();
+            }
+        }
+        
+        function updateMissionsList() {
+            const list = document.getElementById('activeMissionsList');
+            const count = document.getElementById('missionCount');
+            count.textContent = missions.length;
+            
+            if (missions.length === 0) {
+                list.innerHTML = '<div class="vercel-card p-4 text-center text-gray-400">Enter a zone to unlock missions</div>';
+                return;
+            }
+            
+            list.innerHTML = missions.slice(0, 3).map(mission => {
+                const userMission = userMissions.find(um => um.mission_id === mission.id);
+                const statusClass = userMission?.status === 'completed' ? 'mission-completed' : 
+                                  userMission?.status === 'pending' ? 'mission-pending' : 'mission-unlocked';
+                
+                return `
+                    <div class="vercel-card p-4 cursor-pointer hover:bg-white/10 transition-colors ${statusClass}" onclick="openMissionModal('${mission.id}')">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-semibold mb-1">${mission.title}</h4>
+                                <p class="text-sm text-gray-400 line-clamp-2">${mission.description}</p>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <span class="text-xs bg-white/10 px-2 py-1 rounded-full">
+                                        <i class="fas fa-coins mr-1"></i>${mission.points || 100}
+                                    </span>
+                                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
+                                        ${userMission?.status || 'unlocked'}
+                                    </span>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 mt-1"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function loadAllMissions() {
+            try {
+                const { data, error } = await supabase
+                    .from('missions')
+                    .select(`
+                        *,
+                        zone:zone_id (name)
+                    `)
+                    .eq('active', true)
+                    .order('created_at', { ascending: false });
                 
                 if (error) throw error;
                 
-                alert('Emergency alert sent successfully! Administrators have been notified and will respond shortly.');
-                document.getElementById('sosMessage').value = '';
-                renderSOSPage();
+                const container = document.getElementById('missionsList');
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="vercel-card p-6 text-center text-gray-400">No missions available</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.map(mission => {
+                    const userMission = userMissions.find(um => um.mission_id === mission.id);
+                    const statusClass = userMission?.status === 'completed' ? 'mission-completed' : 
+                                      userMission?.status === 'pending' ? 'mission-pending' : 'mission-unlocked';
+                    
+                    return `
+                        <div class="vercel-card p-4 cursor-pointer hover:bg-white/10 transition-colors ${statusClass}" onclick="openMissionModal('${mission.id}')">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h4 class="font-semibold">${mission.title}</h4>
+                                        <span class="badge ${mission.active ? 'badge-approved' : 'badge-pending'}">
+                                            ${mission.active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-gray-400 line-clamp-2">${mission.description}</p>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <span class="text-xs bg-white/10 px-2 py-1 rounded-full">
+                                            <i class="fas fa-coins mr-1"></i>${mission.points || 100}
+                                        </span>
+                                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
+                                            ${mission.zone?.name || 'No Zone'}
+                                        </span>
+                                        <span class="text-xs ${userMission ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'} px-2 py-1 rounded-full">
+                                            ${userMission?.status || 'Locked'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400 mt-1"></i>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
                 
             } catch (error) {
-                alert('Error sending SOS alert: ' + error.message);
-                sosButton.disabled = false;
-                sosButtonText.classList.remove('hidden');
-                sosLoader.classList.add('hidden');
+                console.error('Error loading all missions:', error);
             }
         }
         
-        async function renderProfilePage() {
-            const isLoggedIn = await checkAuth();
-            
-            if (!isLoggedIn) {
-                renderLoginPage();
-                return;
-            }
-            
-            // Get user stats
-            const { data: completedMissions } = await supabase
-                .from('user_missions')
-                .select('mission_id, missions(points)')
-                .eq('user_id', currentUser.id)
-                .eq('status', 'completed');
-            
-            const { data: purchases } = await supabase
-                .from('purchases')
-                .select('total_price')
-                .eq('user_id', currentUser.id);
-            
-            const totalPoints = completedMissions?.reduce((sum, m) => sum + (m.missions?.points || 0), 0) || 0;
-            const totalSpent = purchases?.reduce((sum, p) => sum + p.total_price, 0) || 0;
-            
-            const nav = await renderNavbar();
-            const content = `
-                <div class="min-h-screen fade-in">
-                    ${nav}
-                    <div class="container mx-auto px-4 py-8">
-                        <div class="max-w-4xl mx-auto">
-                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white mb-8">
-                                <div class="flex flex-col md:flex-row items-center justify-between">
-                                    <div class="flex items-center mb-6 md:mb-0">
-                                        <div class="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-6">
-                                            <i class="fas fa-user text-4xl"></i>
-                                        </div>
-                                        <div>
-                                            <h1 class="text-3xl font-bold mb-2">${currentUser.name}</h1>
-                                            <p class="text-blue-100">${currentUser.email}</p>
-                                            ${currentUser.team_name ? `
-                                                <div class="mt-2">
-                                                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
-                                                        Team: ${currentUser.team_name}
-                                                    </span>
-                                                </div>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                    <div class="text-center md:text-right">
-                                        <div class="text-4xl font-bold mb-1">${currentUser.coins}</div>
-                                        <div class="text-blue-100">Total Coins</div>
-                                    </div>
-                                </div>
+        async function openMissionModal(missionId) {
+            try {
+                const mission = missions.find(m => m.id === missionId);
+                if (!mission) {
+                    // Try to fetch the mission
+                    const { data, error } = await supabase
+                        .from('missions')
+                        .select('*')
+                        .eq('id', missionId)
+                        .single();
+                    
+                    if (error) throw error;
+                    currentMission = data;
+                } else {
+                    currentMission = mission;
+                }
+                
+                const userMission = userMissions.find(um => um.mission_id === missionId);
+                const isCompleted = userMission?.status === 'completed';
+                const isPending = userMission?.status === 'pending';
+                
+                document.getElementById('modalMissionTitle').textContent = currentMission.title;
+                document.getElementById('modalMissionContent').innerHTML = `
+                    <div class="space-y-4">
+                        <p class="text-gray-300">${currentMission.description}</p>
+                        ${currentMission.instructions ? `
+                            <div class="vercel-card rounded-xl p-4">
+                                <h4 class="font-semibold mb-2">Instructions:</h4>
+                                <p class="text-gray-300">${currentMission.instructions}</p>
                             </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                <div class="bg-white p-6 rounded-xl shadow">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Points</h3>
-                                            <p class="text-3xl font-bold text-blue-600">${totalPoints}</p>
-                                        </div>
-                                        <i class="fas fa-star text-3xl text-blue-500"></i>
-                                    </div>
-                                </div>
-                                
-                                <div class="bg-white p-6 rounded-xl shadow">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-700 mb-2">Missions Completed</h3>
-                                            <p class="text-3xl font-bold text-green-600">${completedMissions?.length || 0}</p>
-                                        </div>
-                                        <i class="fas fa-flag-checkered text-3xl text-green-500"></i>
-                                    </div>
-                                </div>
-                                
-                                <div class="bg-white p-6 rounded-xl shadow">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-700 mb-2">Coins Spent</h3>
-                                            <p class="text-3xl font-bold text-yellow-600">${totalSpent}</p>
-                                        </div>
-                                        <i class="fas fa-shopping-cart text-3xl text-yellow-500"></i>
-                                    </div>
-                                </div>
+                        ` : ''}
+                        <div class="vercel-card rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-gray-400">Reward:</span>
+                                <span class="font-bold text-lg flex items-center gap-2">
+                                    <i class="fas fa-coins text-yellow-400"></i>${currentMission.points || 100}
+                                </span>
                             </div>
-                            
-                            <div class="bg-white rounded-xl shadow p-8 mb-8">
-                                <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Profile</h2>
-                                
-                                <form id="profileForm" class="space-y-6">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label class="block text-gray-700 text-sm font-medium mb-2">
-                                                Full Name
-                                            </label>
-                                            <input type="text" id="profileName" value="${currentUser.name}"
-                                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                                        </div>
-                                        
-                                        <div>
-                                            <label class="block text-gray-700 text-sm font-medium mb-2">
-                                                Team Name
-                                            </label>
-                                            <input type="text" id="profileTeam" value="${currentUser.team_name || ''}"
-                                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                                   placeholder="Enter team name">
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 text-sm font-medium mb-2">
-                                            Email Address
-                                        </label>
-                                        <input type="email" value="${currentUser.email}" disabled
-                                               class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-500">
-                                        <p class="text-sm text-gray-500 mt-1">Email cannot be changed</p>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 text-sm font-medium mb-2">
-                                            Avatar URL
-                                        </label>
-                                        <input type="url" id="profileAvatar" value="${currentUser.avatar_url || ''}"
-                                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                               placeholder="https://example.com/avatar.jpg">
-                                        <p class="text-sm text-gray-500 mt-1">Enter a direct image URL for your avatar</p>
-                                    </div>
-                                    
-                                    <div class="flex justify-end space-x-4 pt-4">
-                                        <button type="button" onclick="navigateTo('dashboard')" 
-                                                class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                                            Cancel
-                                        </button>
-                                        <button type="submit" id="saveProfileBtn"
-                                                class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                                            <span id="saveProfileText">Save Changes</span>
-                                            <div id="saveProfileLoader" class="loader hidden inline-block ml-2"></div>
-                                        </button>
-                                    </div>
-                                </form>
-                                
-                                <div id="profileMessage" class="mt-4 hidden"></div>
-                            </div>
-                            
-                            <div class="bg-red-50 border border-red-200 rounded-xl p-6">
-                                <h3 class="text-xl font-bold text-red-800 mb-4">Danger Zone</h3>
-                                <p class="text-red-600 mb-4">These actions are permanent and cannot be undone.</p>
-                                <div class="space-y-4">
-                                    <button onclick="deleteAccount()" 
-                                            class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
-                                        <i class="fas fa-trash mr-2"></i>Delete My Account
-                                    </button>
-                                    <p class="text-sm text-red-500">This will permanently delete your account and all associated data.</p>
-                                </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-400">Status:</span>
+                                <span class="font-medium ${isCompleted ? 'text-green-400' : isPending ? 'text-yellow-400' : 'text-blue-400'}">
+                                    ${isCompleted ? 'Completed' : isPending ? 'Pending Review' : 'Ready to Submit'}
+                                </span>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = content;
-            
-            // Add form submission handler
-            document.getElementById('profileForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
+                `;
                 
-                const name = document.getElementById('profileName').value;
-                const team_name = document.getElementById('profileTeam').value || null;
-                const avatar_url = document.getElementById('profileAvatar').value || null;
+                const submitBtn = document.getElementById('submitMissionBtn');
+                if (isCompleted) {
+                    submitBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Mission Completed';
+                    submitBtn.disabled = true;
+                    submitBtn.classList.remove('vercel-button');
+                    submitBtn.classList.add('vercel-button-secondary');
+                } else if (isPending) {
+                    submitBtn.innerHTML = '<i class="fas fa-clock mr-2"></i>Pending Review';
+                    submitBtn.disabled = true;
+                    submitBtn.classList.remove('vercel-button');
+                    submitBtn.classList.add('vercel-button-secondary');
+                } else {
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Submit Mission';
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('vercel-button-secondary');
+                    submitBtn.classList.add('vercel-button');
+                }
                 
-                const saveBtn = document.getElementById('saveProfileBtn');
-                const saveText = document.getElementById('saveProfileText');
-                const saveLoader = document.getElementById('saveProfileLoader');
-                const messageDiv = document.getElementById('profileMessage');
+                document.getElementById('missionModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error opening mission modal:', error);
+                showToast('Error loading mission', 'error');
+            }
+        }
+        
+        function closeMissionModal() {
+            document.getElementById('missionModal').classList.add('hidden');
+            document.getElementById('mediaInput').value = '';
+            document.getElementById('mediaPreview').innerHTML = '';
+            currentMission = null;
+        }
+        
+        async function submitMission() {
+            if (!currentMission) return;
+            try {
+                const mediaInput = document.getElementById('mediaInput');
+                const mediaFile = mediaInput.files[0];
+                if (!mediaFile) {
+                    showToast('Please upload a photo or video', 'warning');
+                    return;
+                }
                 
-                saveBtn.disabled = true;
-                saveText.classList.add('hidden');
-                saveLoader.classList.remove('hidden');
-                messageDiv.classList.add('hidden');
+                // Check file size (max 10MB)
+                if (mediaFile.size > 10 * 1024 * 1024) {
+                    showToast('File size must be less than 10MB', 'warning');
+                    return;
+                }
                 
-                try {
-                    const updatedUser = await updateProfile({ name, team_name, avatar_url });
-                    
-                    messageDiv.innerHTML = `
-                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            Profile updated successfully!
-                        </div>
-                    `;
-                    messageDiv.classList.remove('hidden');
-                    
-                    setTimeout(() => {
-                        navigateTo('dashboard');
-                    }, 1500);
-                    
-                } catch (error) {
-                    messageDiv.innerHTML = `
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            ${error.message}
-                        </div>
-                    `;
-                    messageDiv.classList.remove('hidden');
-                    
-                    saveBtn.disabled = false;
-                    saveText.classList.remove('hidden');
-                    saveLoader.classList.add('hidden');
+                // Upload to Supabase Storage
+                const fileExt = mediaFile.name.split('.').pop();
+                const fileName = `${currentUser.id}/${currentMission.id}/${Date.now()}.${fileExt}`;
+                
+                const { error: uploadError } = await supabase.storage
+                    .from('mission-submissions')
+                    .upload(fileName, mediaFile, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (uploadError) throw uploadError;
+                
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('mission-submissions')
+                    .getPublicUrl(fileName);
+                
+                // Create submission
+                const { error: submissionError } = await supabase
+                    .from('submissions')
+                    .insert([{
+                        user_id: currentUser.id,
+                        mission_id: currentMission.id,
+                        media_url: publicUrl,
+                        gps_location: currentPosition ? `${currentPosition.lat},${currentPosition.lng}` : null,
+                        status: 'pending'
+                    }]);
+                
+                if (submissionError) throw submissionError;
+                
+                // Update user mission status
+                await supabase
+                    .from('user_missions')
+                    .update({ status: 'pending' })
+                    .eq('user_id', currentUser.id)
+                    .eq('mission_id', currentMission.id);
+                
+                showToast('Mission submitted! Awaiting verification.', 'success');
+                closeMissionModal();
+                loadMissions();
+                await createNotification('Mission Submitted', `Your submission for "${currentMission.title}" is pending verification.`, 'info');
+                
+            } catch (error) {
+                console.error('Error submitting mission:', error);
+                if (error.message.includes('Storage')) {
+                    showToast('Error uploading file. Please try again.', 'error');
+                } else {
+                    showToast('Error submitting mission', 'error');
+                }
+            }
+        }
+        
+        // ============================
+        // NAVIGATION
+        // ============================
+        function showHome() {
+            hideAllPages();
+            document.getElementById('homePage').classList.remove('hidden');
+            setActiveNav('home');
+            currentPage = 'home';
+        }
+        
+        function showMissions() {
+            hideAllPages();
+            document.getElementById('missionsPage').classList.remove('hidden');
+            loadAllMissions();
+            setActiveNav('missions');
+            currentPage = 'missions';
+        }
+        
+        function showLeaderboard() {
+            hideAllPages();
+            document.getElementById('leaderboardPage').classList.remove('hidden');
+            loadLeaderboard();
+            setActiveNav('leaderboard');
+            currentPage = 'leaderboard';
+        }
+        
+        function showShop() {
+            hideAllPages();
+            document.getElementById('shopPage').classList.remove('hidden');
+            loadShopItems();
+            setActiveNav('shop');
+            currentPage = 'shop';
+        }
+        
+        function showNotifications() {
+            hideAllPages();
+            document.getElementById('notificationsPage').classList.remove('hidden');
+            loadNotificationsPage();
+            currentPage = 'notifications';
+        }
+        
+        function hideAllPages() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('missionsPage').classList.add('hidden');
+            document.getElementById('leaderboardPage').classList.add('hidden');
+            document.getElementById('shopPage').classList.add('hidden');
+            document.getElementById('notificationsPage').classList.add('hidden');
+        }
+        
+        function setActiveNav(page) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if (item.dataset.page === page) {
+                    item.classList.add('active-nav');
+                } else {
+                    item.classList.remove('active-nav');
                 }
             });
         }
         
-        async function deleteAccount() {
-            if (!confirm('Are you absolutely sure? This will permanently delete your account and all your data. This action cannot be undone.')) {
-                return;
-            }
-            
-            const confirmation = prompt('Type "DELETE" to confirm account deletion:');
-            if (confirmation !== 'DELETE') {
-                alert('Account deletion cancelled.');
-                return;
-            }
-            
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        }
+        
+        // ============================
+        // LEADERBOARD
+        // ============================
+        async function loadLeaderboard() {
             try {
-                // Delete from public.users (cascade will delete related records)
-                const { error: userError } = await supabase
+                const { data, error } = await supabase
                     .from('users')
-                    .delete()
+                    .select('id, name, team_name, coins')
+                    .order('coins', { ascending: false })
+                    .limit(20);
+                
+                if (error) throw error;
+                leaderboardData = data || [];
+                displayLeaderboard();
+            } catch (error) {
+                console.log('Error loading leaderboard:', error);
+                leaderboardData = [];
+                displayLeaderboard();
+            }
+        }
+        
+        function displayLeaderboard() {
+            const container = document.getElementById('leaderboardList');
+            if (leaderboardData.length === 0) {
+                container.innerHTML = '<div class="vercel-card p-6 text-center text-gray-400">No leaderboard data</div>';
+                return;
+            }
+            
+            container.innerHTML = leaderboardData.map((user, index) => {
+                const isCurrentUser = user.id === userProfile?.id;
+                const rank = index + 1;
+                let rankClass = 'text-gray-400';
+                let rankIcon = '';
+                
+                if (rank === 1) {
+                    rankClass = 'text-yellow-400';
+                    rankIcon = '<i class="fas fa-crown"></i>';
+                } else if (rank === 2) {
+                    rankClass = 'text-gray-300';
+                    rankIcon = '<i class="fas fa-medal"></i>';
+                } else if (rank === 3) {
+                    rankClass = 'text-amber-600';
+                    rankIcon = '<i class="fas fa-medal"></i>';
+                }
+                
+                return `
+                    <div class="vercel-card p-4 ${isCurrentUser ? 'border border-white/20' : ''}">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full ${rank <= 3 ? rankClass : 'text-gray-400'} flex items-center justify-center font-bold text-lg">
+                                ${rankIcon || rank}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-semibold ${isCurrentUser ? 'text-blue-400' : ''}">${user.name}</h4>
+                                    ${isCurrentUser ? '<span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">You</span>' : ''}
+                                </div>
+                                <div class="text-sm text-gray-400">${user.team_name || 'No Team'}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold flex items-center gap-1">
+                                    <i class="fas fa-coins text-yellow-400"></i>${user.coins || 0}
+                                </div>
+                                <div class="text-xs text-gray-400">coins</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // ============================
+        // SHOP
+        // ============================
+        async function loadShopItems() {
+            try {
+                const { data, error } = await supabase
+                    .from('prizes')
+                    .select('*')
+                    .eq('active', true)
+                    .order('price');
+                
+                if (error) throw error;
+                shopItems = data || [];
+                displayShopItems();
+            } catch (error) {
+                console.log('Error loading shop items:', error);
+                shopItems = [];
+                displayShopItems();
+            }
+        }
+        
+        function displayShopItems() {
+            const container = document.getElementById('shopItems');
+            if (shopItems.length === 0) {
+                container.innerHTML = '<div class="col-span-3 vercel-card p-6 text-center text-gray-400">No items in shop</div>';
+                return;
+            }
+            
+            container.innerHTML = shopItems.map(item => {
+                const canAfford = userProfile && userProfile.coins >= item.price;
+                const isOutOfStock = item.remaining_quantity <= 0;
+                
+                return `
+                    <div class="vercel-card p-4">
+                        <div class="aspect-square rounded-xl bg-white/5 flex items-center justify-center text-6xl mb-3">
+                            ${item.image_url ? `<img src="${item.image_url}" class="w-full h-full object-cover rounded-xl">` : '<i class="fas fa-gift text-gray-400"></i>'}
+                        </div>
+                        <h4 class="font-semibold mb-1">${item.name}</h4>
+                        <p class="text-sm text-gray-400 mb-2 line-clamp-2">${item.description}</p>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-coins text-yellow-400"></i>
+                                <span class="font-bold">${item.price}</span>
+                            </div>
+                            <div class="text-xs ${item.remaining_quantity <= 3 ? 'text-orange-400' : 'text-gray-400'}">
+                                ${item.remaining_quantity} / ${item.total_quantity} left
+                            </div>
+                        </div>
+                        <button onclick="buyItem('${item.id}')" ${!canAfford || isOutOfStock ? 'disabled' : ''}
+                                class="w-full h-10 rounded-xl ${!canAfford || isOutOfStock ? 'vercel-button-secondary opacity-50 cursor-not-allowed' : 'vercel-button'} font-medium">
+                            ${isOutOfStock ? 'Out of Stock' : !canAfford ? `Need ${item.price - (userProfile?.coins || 0)} more` : 'Buy Now'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function buyItem(itemId) {
+            try {
+                const item = shopItems.find(i => i.id === itemId);
+                if (!item) throw new Error('Item not found');
+                if (!userProfile || userProfile.coins < item.price) {
+                    showToast(`You need ${item.price - (userProfile?.coins || 0)} more coins`, 'error');
+                    return;
+                }
+                if (item.remaining_quantity <= 0) {
+                    showToast('This item is out of stock', 'error');
+                    return;
+                }
+                
+                // Create purchase
+                await supabase.from('purchases').insert([{
+                    user_id: currentUser.id,
+                    prize_id: item.id,
+                    total_price: item.price,
+                    status: 'pending'
+                }]);
+                
+                // Update prize quantity
+                await supabase
+                    .from('prizes')
+                    .update({ remaining_quantity: item.remaining_quantity - 1 })
+                    .eq('id', item.id);
+                
+                // Update user coins
+                const newCoins = userProfile.coins - item.price;
+                await supabase
+                    .from('users')
+                    .update({ coins: newCoins })
                     .eq('id', currentUser.id);
-                    
-                if (userError) throw userError;
                 
-                // Delete from auth.users
-                const { error: authError } = await supabase.auth.signOut();
-                if (authError) throw authError;
+                // Update local state
+                userProfile.coins = newCoins;
+                updateUI();
                 
-                alert('Account deleted successfully. You will be redirected to the home page.');
-                setTimeout(() => {
-                    currentUser = null;
-                    isAdmin = false;
-                    window.location.hash = '';
-                    renderLoginPage();
-                }, 2000);
+                showToast(`Purchased ${item.name}!`, 'success');
+                await createNotification('Purchase Successful', `You bought ${item.name} for ${item.price} coins.`, 'success');
+                loadShopItems();
                 
             } catch (error) {
-                alert('Error deleting account: ' + error.message);
+                console.error('Error purchasing item:', error);
+                showToast('Error purchasing item', 'error');
             }
         }
         
-        // Initialize the app
-        async function initApp() {
-            // Check for email confirmation success
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('type') === 'signup') {
-                alert('Email confirmed successfully! You can now log in.');
-                window.location.hash = 'login';
+        // ============================
+        // NOTIFICATIONS
+        // ============================
+        async function loadNotifications() {
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (error) throw error;
+                notifications = data || [];
+                unreadNotifications = notifications.filter(n => !n.is_read).length;
+                updateNotificationDot();
+                
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+        
+        async function loadNotificationsPage() {
+            const container = document.getElementById('notificationsList');
+            if (notifications.length === 0) {
+                container.innerHTML = '<div class="vercel-card p-6 text-center text-gray-400">No notifications</div>';
+                return;
             }
             
-            // Handle routing
-            window.addEventListener('hashchange', handleRoute);
-            
-            // Check initial auth state
-            const isLoggedIn = await checkAuth();
-            
-            // Set initial route
-            if (window.location.hash) {
-                handleRoute();
+            container.innerHTML = notifications.map(notification => {
+                const icon = {
+                    'info': 'fas fa-info-circle text-blue-400',
+                    'success': 'fas fa-check-circle text-green-400',
+                    'warning': 'fas fa-exclamation-triangle text-yellow-400',
+                    'error': 'fas fa-times-circle text-red-400'
+                }[notification.type] || 'fas fa-bell text-gray-400';
+                
+                return `
+                    <div class="vercel-card p-4 ${notification.is_read ? '' : 'border-l-4 border-blue-500'}">
+                        <div class="flex items-start gap-3">
+                            <i class="${icon} mt-1"></i>
+                            <div class="flex-1">
+                                <h4 class="font-semibold mb-1">${notification.title}</h4>
+                                <p class="text-sm text-gray-300">${notification.message}</p>
+                                <div class="text-xs text-gray-400 mt-2">${formatTimeAgo(notification.created_at)}</div>
+                            </div>
+                            ${!notification.is_read ? `
+                                <button onclick="markAsRead('${notification.id}')" class="text-xs text-blue-400 hover:text-blue-300">
+                                    Mark read
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function markAsRead(notificationId) {
+            try {
+                await supabase
+                    .from('notifications')
+                    .update({ is_read: true })
+                    .eq('id', notificationId);
+                await loadNotifications();
+                loadNotificationsPage();
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+            }
+        }
+        
+        async function markAllAsRead() {
+            try {
+                await supabase
+                    .from('notifications')
+                    .update({ is_read: true })
+                    .eq('user_id', currentUser.id)
+                    .eq('is_read', false);
+                await loadNotifications();
+                loadNotificationsPage();
+            } catch (error) {
+                console.error('Error marking all as read:', error);
+            }
+        }
+        
+        async function createNotification(title, message, type = 'info') {
+            try {
+                await supabase
+                    .from('notifications')
+                    .insert([{
+                        user_id: currentUser.id,
+                        title,
+                        message,
+                        type
+                    }]);
+            } catch (error) {
+                console.error('Error creating notification:', error);
+            }
+        }
+        
+        function updateNotificationDot() {
+            const dot = document.getElementById('notificationDot');
+            if (unreadNotifications > 0) {
+                dot.classList.remove('hidden');
             } else {
-                window.location.hash = isLoggedIn ? 'dashboard' : 'login';
+                dot.classList.add('hidden');
             }
         }
         
-        // Start the app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
+        function closeNotificationsModal() {
+            document.getElementById('notificationsModal').classList.add('hidden');
+        }
+        
+        // ============================
+        // SOS
+        // ============================
+        async function triggerSOS() {
+            if (!currentPosition) currentPosition = { lat: 37.7749, lng: -122.4194 };
+            const confirmation = confirm('Send emergency SOS alert? This will notify event organizers.');
+            if (confirmation) {
+                try {
+                    await supabase.from('sos_alerts').insert([{
+                        user_id: currentUser.id,
+                        location: currentPosition,
+                        message: 'Emergency SOS triggered by user',
+                        status: 'active'
+                    }]);
+                    showToast('🚨 Emergency SOS sent! Help is on the way.', 'success');
+                    await createNotification('SOS Alert Sent', 'Your emergency alert has been sent to organizers.', 'warning');
+                } catch (error) {
+                    console.error('Error sending SOS:', error);
+                    showToast('Error sending SOS alert', 'error');
+                }
+            }
+        }
+        
+        // ============================
+        // UTILITIES
+        // ============================
+        function setupEventListeners() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeMissionModal();
+                    closeProfile();
+                    closeNotificationsModal();
+                }
+            });
+            
+            document.getElementById('mediaInput')?.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById('mediaPreview');
+                if (file) {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            preview.innerHTML = `<img src="${e.target.result}" class="max-w-full max-h-48 rounded-lg" alt="Preview">`;
+                        };
+                        reader.readAsDataURL(file);
+                    } else if (file.type.startsWith('video/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            preview.innerHTML = `
+                                <video controls class="max-w-full max-h-48 rounded-lg">
+                                    <source src="${e.target.result}" type="${file.type}">
+                                </video>
+                            `;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+        }
+        
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+            
+            if (diffDay > 7) return date.toLocaleDateString();
+            else if (diffDay > 0) return `${diffDay}d ago`;
+            else if (diffHour > 0) return `${diffHour}h ago`;
+            else if (diffMin > 0) return `${diffMin}m ago`;
+            else return 'just now';
+        }
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500', info: 'bg-blue-500' };
+            const toast = document.createElement('div');
+            toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg animate-fadeIn max-w-sm`;
+            toast.innerHTML = `<div class="flex items-center justify-between"><span>${message}</span><button onclick="this.parentElement.parentElement.remove()" class="ml-4"><i class="fas fa-times"></i></button></div>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-20px)';
+                    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 300);
+                }
+            }, 4000);
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+        
+        function showProfile() {
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+        
+        function closeProfile() {
+            document.getElementById('profileModal').classList.add('hidden');
+        }
     </script>
 </body>
 </html>
