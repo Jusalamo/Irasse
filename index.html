@@ -2,1090 +2,986 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AN IRRASE EXPERIENCE - Treasure Hunt</title>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irrasé Experience - Treasure Hunt</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <!-- Mapbox -->
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
-    
-    <!-- Supabase JS -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
+    <!-- Mapbox Draw -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.1/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.1/mapbox-gl-draw.css" type="text/css">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary: #000000;
-            --secondary: #ffffff;
-            --accent: #0070f3;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #3b82f6;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         
         * {
-            -webkit-tap-highlight-color: transparent;
-            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
         
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #000;
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        .map-container {
+            height: 400px;
+            width: 100%;
+        }
+        
+        /* Portrait warning */
+        .portrait-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
             color: white;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-        }
-        
-        .glass-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-        }
-        
-        .primary-btn {
-            background: linear-gradient(135deg, #ffffff, #f0f0f0);
-            color: #000;
-            font-weight: 600;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
-        }
-        
-        .primary-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(255, 255, 255, 0.2);
-            background: linear-gradient(135deg, #ffffff, #e0e0e0);
-        }
-        
-        .primary-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .secondary-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-        
-        .secondary-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-        
-        .danger-btn {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-        
-        .timer {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 8px 16px;
-            font-variant-numeric: tabular-nums;
-            font-weight: 700;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-        }
-        
-        .badge {
-            display: inline-flex;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            line-height: 1;
+            text-align: center;
+            padding: 20px;
         }
         
-        .badge-success {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-        }
-        
-        .badge-warning {
-            background: rgba(245, 158, 11, 0.2);
-            color: #f59e0b;
-        }
-        
-        .badge-info {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-        }
-        
-        .badge-danger {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-        }
-        
-        .notification-dot {
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            width: 10px;
-            height: 10px;
-            background: #ef4444;
-            border-radius: 50%;
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+        @media (orientation: landscape) and (max-height: 600px) {
+            .portrait-warning {
+                display: flex;
             }
         }
         
-        .active-nav {
-            background: rgba(255, 255, 255, 0.15);
+        /* Glass effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .hidden {
-            display: none !important;
+        /* Mission status colors */
+        .status-locked {
+            background-color: #6b7280;
+            color: white;
         }
         
-        .mapboxgl-canvas {
-            border-radius: 12px;
+        .status-unlocked {
+            background-color: #3b82f6;
+            color: white;
         }
         
-        @media (max-width: 768px) {
-            .glass-card {
-                border-radius: 12px;
-            }
+        .status-pending {
+            background-color: #f59e0b;
+            color: white;
         }
         
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .status-completed {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .status-rejected {
+            background-color: #ef4444;
+            color: white;
+        }
+        
+        /* Pulse animation for new content */
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .pulse-subtle {
+            animation: pulse-subtle 2s infinite;
+        }
+        
+        /* SOS button animation */
+        @keyframes sos-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        
+        .sos-pulse {
+            animation: sos-pulse 2s infinite;
         }
     </style>
 </head>
-<body class="min-h-screen">
-    <!-- Auth Screen -->
-    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4">
-        <div class="w-full max-w-md space-y-8 fade-in">
-            <div class="text-center">
-                <h1 class="text-4xl font-black mb-3 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    AN IRRASE EXPERIENCE
-                </h1>
-                <p class="text-gray-400">Treasure Hunt Adventure</p>
-            </div>
-            
-            <!-- Login Form -->
-            <div id="loginForm" class="glass-card p-8">
-                <div id="authError" class="hidden bg-red-500/20 border border-red500/30 text-red-300 p-4 rounded-xl mb-6 text-sm"></div>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
+    <!-- Portrait Warning -->
+    <div class="portrait-warning">
+        <i class="fas fa-sync-alt text-6xl mb-4 animate-spin"></i>
+        <h1 class="text-2xl font-bold mb-2">Please Rotate Device</h1>
+        <p class="text-lg">This app is designed for portrait mode only.</p>
+        <p class="mt-4">Turn your phone upright for the best experience.</p>
+    </div>
+    
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Irrasé Experience</h2>
+                    <p class="text-gray-600 mt-2">24-Hour Treasure Hunt</p>
+                </div>
                 
-                <h2 class="text-xl font-bold mb-6">Sign In to Play</h2>
-                <form id="loginFormElement" onsubmit="event.preventDefault(); handleLogin();">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                            <input 
-                                type="email" 
-                                id="loginEmail" 
-                                required 
-                                class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
-                                placeholder="player@example.com"
-                                value="player@example.com"
-                            >
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                            <input 
-                                type="password" 
-                                id="loginPassword" 
-                                required 
-                                class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
-                                placeholder="••••••••"
-                                value="password123"
-                            >
-                        </div>
-                        
-                        <button type="submit" id="loginBtn" class="w-full h-12 rounded-xl primary-btn font-semibold text-base">
-                            <span id="loginBtnText">Sign In to Play</span>
-                            <span id="loginBtnSpinner" class="hidden ml-2"><i class="fas fa-spinner fa-spin"></i></span>
-                        </button>
+                <div id="authTabs" class="flex border-b mb-6">
+                    <button id="loginTab" class="flex-1 py-3 font-medium text-center border-b-2 border-blue-500 text-blue-600">Login</button>
+                    <button id="signupTab" class="flex-1 py-3 font-medium text-center text-gray-500">Sign Up</button>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Email</label>
+                        <input type="email" id="loginEmail" required class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Password</label>
+                        <input type="password" id="loginPassword" required class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition duration-200">
+                        Sign In
+                    </button>
                 </form>
                 
-                <div class="mt-6 pt-6 border-t border-white/10 text-center">
-                    <p class="text-sm text-gray-400">
-                        New to the hunt? 
-                        <button type="button" onclick="toggleAuthMode()" class="text-white font-medium hover:underline">
-                            Create Account
-                        </button>
-                    </p>
-                </div>
-            </div>
-            
-            <!-- Signup Form -->
-            <div id="signupForm" class="glass-card p-8 hidden">
-                <div id="signupError" class="hidden bg-red-500/20 border border-red500/30 text-red-300 p-4 rounded-xl mb-6 text-sm"></div>
-                
-                <h2 class="text-xl font-bold mb-6">Join the Adventure</h2>
-                <form id="signupFormElement" onsubmit="event.preventDefault(); handleSignup();">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Full Name *</label>
-                            <input 
-                                type="text" 
-                                id="signupName" 
-                                required 
-                                class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
-                                placeholder="John Doe"
-                            >
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Email Address *</label>
-                            <input 
-                                type="email" 
-                                id="signupEmail" 
-                                required 
-                                class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
-                                placeholder="player@example.com"
-                            >
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Password (min. 6 characters) *</label>
-                            <input 
-                                type="password" 
-                                id="signupPassword" 
-                                required 
-                                minlength="6"
-                                class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
-                                placeholder="••••••••"
-                            >
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Team Name (Optional)</label>
-                            <input 
-                                type="text" 
-                                id="signupTeam" 
-                                class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
-                                placeholder="The Adventurers"
-                            >
-                        </div>
-                        
-                        <button type="submit" id="signupBtn" class="w-full h-12 rounded-xl primary-btn font-semibold text-base">
-                            <span id="signupBtnText">Create Account & Start</span>
-                            <span id="signupBtnSpinner" class="hidden ml-2"><i class="fas fa-spinner fa-spin"></i></span>
-                        </button>
+                <!-- Signup Form -->
+                <form id="signupForm" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="signupName" required class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Team Name</label>
+                        <input type="text" id="signupTeam" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Optional">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Email</label>
+                        <input type="email" id="signupEmail" required class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Password</label>
+                        <input type="password" id="signupPassword" required minlength="6" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button type="submit" class="w-full bg-purple-500 text-white py-3 rounded-lg font-medium hover:bg-purple-600 transition duration-200">
+                        Create Account
+                    </button>
                 </form>
                 
-                <div class="mt-6 pt-6 border-t border-white/10 text-center">
-                    <p class="text-sm text-gray-400">
-                        Already have an account? 
-                        <button type="button" onclick="toggleAuthMode()" class="text-white font-medium hover:underline">
-                            Sign In
-                        </button>
-                    </p>
-                </div>
+                <div id="authError" class="mt-4 p-3 bg-red-50 text-red-700 rounded-lg hidden"></div>
             </div>
         </div>
     </div>
-
-    <!-- Main App -->
-    <div id="mainApp" class="hidden">
-        <!-- Top Header -->
-        <header class="fixed top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-xl border-b border-white/10 z-50">
-            <div class="h-full px-4 flex items-center justify-between max-w-7xl mx-auto">
-                <div class="flex items-center gap-4">
-                    <button type="button" onclick="toggleSidebar()" class="lg:hidden w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    
-                    <h1 class="text-lg font-bold hidden md:block">AN IRRASE EXPERIENCE</h1>
-                    
-                    <div class="timer flex items-center gap-2">
-                        <i class="fas fa-clock text-gray-400"></i>
-                        <span id="eventTimer" class="font-bold">08:00:00</span>
+    
+    <!-- Main App (Hidden until authenticated) -->
+    <div id="app" class="hidden">
+        <!-- Header with Timer -->
+        <header class="glass sticky top-0 z-40">
+            <div class="flex justify-between items-center p-4">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">Irrasé Hunt</h1>
+                    <div id="timer" class="text-sm font-mono bg-gray-800 text-white px-2 py-1 rounded inline-block">
+                        24:00:00
                     </div>
                 </div>
-                
-                <div class="flex items-center gap-3">
-                    <div class="glass-card px-4 py-2 rounded-xl flex items-center gap-2">
-                        <i class="fas fa-coins text-yellow-400"></i>
-                        <span id="coinDisplay" class="font-bold">0</span>
+                <div class="flex items-center space-x-3">
+                    <div class="text-right">
+                        <div id="userCoins" class="font-bold text-yellow-600">100 coins</div>
+                        <div id="userName" class="text-sm text-gray-600">Player</div>
                     </div>
-                    
-                    <button type="button" onclick="showNotifications()" class="relative w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                        <i class="fas fa-bell"></i>
-                        <div id="notificationDot" class="notification-dot hidden"></div>
-                    </button>
-                    
-                    <button type="button" onclick="showProfile()" class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                        <i class="fas fa-user"></i>
+                    <button id="profileBtn" class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        <i class="fas fa-user text-gray-700"></i>
                     </button>
                 </div>
             </div>
         </header>
-
-        <!-- Desktop Sidebar -->
-        <nav id="sidebar" class="hidden lg:block fixed left-0 top-16 bottom-0 w-64 bg-black/80 backdrop-blur-xl border-r border-white/10 z-40">
-            <div class="p-4 space-y-2">
-                <button type="button" onclick="showHome()" class="w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-white/10 transition-colors active-nav" data-page="home">
-                    <i class="fas fa-home w-5"></i>
-                    <span>Home</span>
+        
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 glass border-t z-40">
+            <div class="flex justify-around items-center h-16">
+                <button data-page="home" class="nav-btn flex flex-col items-center text-blue-500">
+                    <i class="fas fa-home text-lg"></i>
+                    <span class="text-xs mt-1">Home</span>
                 </button>
-                
-                <button type="button" onclick="showMissions()" class="w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-white/10 transition-colors" data-page="missions">
-                    <i class="fas fa-tasks w-5"></i>
-                    <span>Missions</span>
-                    <span id="missionBadge" class="ml-auto badge badge-info hidden">0</span>
+                <button data-page="missions" class="nav-btn flex flex-col items-center text-gray-500">
+                    <i class="fas fa-flag text-lg"></i>
+                    <span class="text-xs mt-1">Missions</span>
                 </button>
-                
-                <button type="button" onclick="showLeaderboard()" class="w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-white/10 transition-colors" data-page="leaderboard">
-                    <i class="fas fa-trophy w-5"></i>
-                    <span>Leaderboard</span>
+                <button data-page="leaderboard" class="nav-btn flex flex-col items-center text-gray-500">
+                    <i class="fas fa-trophy text-lg"></i>
+                    <span class="text-xs mt-1">Rank</span>
                 </button>
-                
-                <button type="button" onclick="showShop()" class="w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-white/10 transition-colors" data-page="shop">
-                    <i class="fas fa-gift w-5"></i>
-                    <span>Rewards Shop</span>
+                <button data-page="shop" class="nav-btn flex flex-col items-center text-gray-500">
+                    <i class="fas fa-store text-lg"></i>
+                    <span class="text-xs mt-1">Shop</span>
                 </button>
-                
-                <button type="button" onclick="showActivities()" class="w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-white/10 transition-colors" data-page="activities">
-                    <i class="fas fa-history w-5"></i>
-                    <span>My Activities</span>
-                </button>
-            </div>
-            
-            <div class="absolute bottom-4 left-4 right-4">
-                <button type="button" onclick="triggerSOS()" class="danger-btn w-full h-12 font-bold text-base">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    EMERGENCY SOS
+                <button data-page="sos" class="nav-btn flex flex-col items-center text-gray-500">
+                    <i class="fas fa-first-aid text-lg"></i>
+                    <span class="text-xs mt-1">SOS</span>
                 </button>
             </div>
         </nav>
-
+        
         <!-- Main Content -->
-        <main class="pt-16 pb-20 lg:pb-4 lg:pl-64 min-h-screen">
+        <main class="pb-20">
             <!-- Home Page -->
-            <div id="homePage" class="p-4 space-y-4 max-w-7xl mx-auto">
-                <button type="button" onclick="triggerSOS()" class="danger-btn w-full h-16 text-lg lg:hidden">
-                    <i class="fas fa-exclamation-triangle mr-3"></i>
-                    EMERGENCY SOS
-                </button>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="glass-card p-4">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                                <i class="fas fa-tasks text-blue-400"></i>
-                            </div>
+            <section id="homePage" class="page p-4">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome, <span id="homeUserName">Player</span>!</h2>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="glass rounded-xl p-4">
+                            <div class="text-gray-600 text-sm">Your Coins</div>
+                            <div id="homeCoins" class="text-2xl font-bold text-yellow-600">100</div>
                         </div>
-                        <div class="text-2xl font-bold" id="missionCount">0</div>
-                        <div class="text-sm text-gray-400">Active Missions</div>
-                    </div>
-                    
-                    <div class="glass-card p-4">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-                                <i class="fas fa-map-marker-alt text-green-400"></i>
-                            </div>
+                        <div class="glass rounded-xl p-4">
+                            <div class="text-gray-600 text-sm">Missions Done</div>
+                            <div id="missionsDone" class="text-2xl font-bold text-blue-600">0</div>
                         </div>
-                        <div class="text-2xl font-bold" id="zoneCount">0</div>
-                        <div class="text-sm text-gray-400">Game Zones</div>
                     </div>
                 </div>
                 
-                <div class="glass-card overflow-hidden">
-                    <div class="p-4 border-b border-white/10">
-                        <h2 class="text-lg font-bold">Treasure Hunt Map</h2>
-                        <p class="text-sm text-gray-400">Your current location and mission zones</p>
-                    </div>
-                    <div id="map" class="w-full h-[300px] bg-gradient-to-br from-blue-900/20 to-purple-900/20">
-                        <!-- Map will be loaded here -->
-                    </div>
-                </div>
-                
-                <div>
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold">Your Missions</h3>
-                        <button type="button" onclick="showMissions()" class="text-sm text-gray-400 hover:text-white flex items-center">
-                            View All
-                            <i class="fas fa-arrow-right ml-2"></i>
+                <!-- Map -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-gray-700">Game Map</h3>
+                        <button id="refreshLocation" class="text-sm bg-blue-500 text-white px-3 py-1 rounded-lg">
+                            <i class="fas fa-location-arrow mr-1"></i> Locate Me
                         </button>
                     </div>
+                    <div id="map" class="map-container rounded-xl overflow-hidden shadow-lg"></div>
+                </div>
+                
+                <!-- Active Missions -->
+                <div>
+                    <h3 class="font-bold text-gray-700 mb-3">Active Missions</h3>
                     <div id="activeMissionsList" class="space-y-3">
-                        <div class="glass-card p-6 text-center">
-                            <i class="fas fa-flag text-3xl text-gray-400 mb-3"></i>
-                            <p class="text-gray-400">Loading missions...</p>
+                        <!-- Missions will be loaded here -->
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-compass text-4xl mb-2"></i>
+                            <p>Enter a zone to unlock missions!</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Missions Page -->
+            <section id="missionsPage" class="page p-4 hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">All Missions</h2>
+                <div class="mb-4">
+                    <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-2">
+                        <button data-filter="all" class="filter-btn px-4 py-2 bg-blue-500 text-white rounded-lg">All</button>
+                        <button data-filter="unlocked" class="filter-btn px-4 py-2 bg-gray-200 rounded-lg">Unlocked</button>
+                        <button data-filter="completed" class="filter-btn px-4 py-2 bg-gray-200 rounded-lg">Completed</button>
+                        <button data-filter="pending" class="filter-btn px-4 py-2 bg-gray-200 rounded-lg">Pending</button>
+                    </div>
+                </div>
+                <div id="missionsList" class="space-y-4">
+                    <!-- Missions will be loaded here -->
+                </div>
+            </section>
+            
+            <!-- Leaderboard Page -->
+            <section id="leaderboardPage" class="page p-4 hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Leaderboard</h2>
+                <div class="glass rounded-xl p-4 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <div class="text-gray-600">Your Rank</div>
+                            <div id="userRank" class="text-3xl font-bold">#1</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-gray-600">Your Score</div>
+                            <div id="userScore" class="text-3xl font-bold text-yellow-600">100</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="leaderboardList" class="space-y-3">
+                    <!-- Leaderboard will be loaded here -->
+                </div>
+            </section>
+            
+            <!-- Shop Page -->
+            <section id="shopPage" class="page p-4 hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Prize Shop</h2>
+                <div class="mb-6 glass rounded-xl p-4">
+                    <div class="text-center">
+                        <div class="text-gray-600 mb-1">Your Balance</div>
+                        <div id="shopCoins" class="text-4xl font-bold text-yellow-600">100 coins</div>
+                    </div>
+                </div>
+                
+                <div id="prizesList" class="grid grid-cols-2 gap-4">
+                    <!-- Prizes will be loaded here -->
+                </div>
+            </section>
+            
+            <!-- SOS Page -->
+            <section id="sosPage" class="page p-4 hidden">
+                <div class="text-center py-8">
+                    <div class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6 sos-pulse">
+                        <i class="fas fa-first-aid text-white text-4xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Emergency SOS</h2>
+                    <p class="text-gray-600 mb-6">Use only in case of real emergency</p>
+                    
+                    <button id="triggerSOS" class="w-full bg-red-500 text-white py-4 rounded-xl font-bold text-lg mb-6 hover:bg-red-600 transition duration-200">
+                        <i class="fas fa-bell mr-2"></i> Trigger Emergency Alert
+                    </button>
+                    
+                    <div class="glass rounded-xl p-4">
+                        <h3 class="font-bold text-gray-800 mb-2">Emergency Contacts</h3>
+                        <div class="space-y-2 text-left">
+                            <div class="flex justify-between">
+                                <span>Police</span>
+                                <span class="font-bold">10111</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Ambulance</span>
+                                <span class="font-bold">081 924</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Game Admin</span>
+                                <span class="font-bold">+264 81 123 4567</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 text-sm text-gray-500">
+                        <p><i class="fas fa-info-circle mr-1"></i> Your location will be shared with admins</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Profile Modal -->
+            <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end justify-center p-4 hidden">
+                <div class="bg-white rounded-t-2xl w-full max-w-md overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold">Profile</h3>
+                            <button id="closeProfile" class="text-gray-500">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="text-center mb-6">
+                            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-user text-blue-500 text-3xl"></i>
+                            </div>
+                            <h4 id="profileName" class="text-xl font-bold"></h4>
+                            <div id="profileTeam" class="text-gray-600"></div>
+                        </div>
+                        
+                        <div class="space-y-4 mb-6">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span>Coins</span>
+                                <span id="profileCoins" class="font-bold text-yellow-600"></span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span>Completed Missions</span>
+                                <span id="profileCompleted" class="font-bold text-blue-600"></span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span>Member Since</span>
+                                <span id="profileSince" class="font-bold"></span>
+                            </div>
+                        </div>
+                        
+                        <button id="logoutBtn" class="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition duration-200">
+                            Log Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mission Detail Modal -->
+            <div id="missionModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+                <div class="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 id="missionTitle" class="text-xl font-bold"></h3>
+                                <div id="missionPoints" class="text-yellow-600 font-bold"></div>
+                            </div>
+                            <button id="closeMission" class="text-gray-500">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="missionStatusBadge" class="inline-block px-3 py-1 rounded-full text-sm font-medium mb-4"></div>
+                        
+                        <p id="missionDescription" class="text-gray-700 mb-6"></p>
+                        
+                        <!-- Submission Section -->
+                        <div id="submissionSection" class="hidden">
+                            <h4 class="font-bold text-gray-800 mb-3">Submit Proof</h4>
+                            
+                            <!-- Image Preview -->
+                            <div id="imagePreview" class="mb-4 hidden">
+                                <img id="previewImage" class="w-full h-48 object-cover rounded-lg">
+                            </div>
+                            
+                            <!-- Video Preview -->
+                            <div id="videoPreview" class="mb-4 hidden">
+                                <video id="previewVideo" controls class="w-full h-48 rounded-lg"></video>
+                            </div>
+                            
+                            <!-- File Upload -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Upload Photo/Video</label>
+                                <input type="file" id="missionMedia" accept="image/*,video/*" capture="environment" class="w-full">
+                                <p class="text-sm text-gray-500 mt-1">Take a photo or video at the location</p>
+                            </div>
+                            
+                            <!-- GPS Info -->
+                            <div class="mb-6">
+                                <div class="flex items-center text-gray-600 mb-2">
+                                    <i class="fas fa-map-marker-alt mr-2"></i>
+                                    <span>Location Status:</span>
+                                </div>
+                                <div id="gpsStatus" class="text-sm p-2 bg-gray-100 rounded">
+                                    Waiting for GPS...
+                                </div>
+                            </div>
+                            
+                            <button id="submitMission" class="w-full bg-green-500 text-white py-3 rounded-lg font-medium hover:bg-green-600 transition duration-200 disabled:opacity-50">
+                                Submit for Verification
+                            </button>
+                        </div>
+                        
+                        <!-- Completed/Rejected View -->
+                        <div id="completedView" class="hidden">
+                            <div class="bg-green-50 text-green-700 p-4 rounded-lg mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-xl mr-2"></i>
+                                    <div>
+                                        <div class="font-bold">Mission Completed!</div>
+                                        <div id="completionTime" class="text-sm"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="submissionDetails" class="space-y-3">
+                                <!-- Submission details will be shown here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Pending View -->
+                        <div id="pendingView" class="hidden">
+                            <div class="bg-yellow-50 text-yellow-700 p-4 rounded-lg mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-clock text-xl mr-2"></i>
+                                    <div>
+                                        <div class="font-bold">Pending Verification</div>
+                                        <div class="text-sm">Admin will review your submission</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rejected View -->
+                        <div id="rejectedView" class="hidden">
+                            <div class="bg-red-50 text-red-700 p-4 rounded-lg mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-times-circle text-xl mr-2"></i>
+                                    <div>
+                                        <div class="font-bold">Submission Rejected</div>
+                                        <div id="rejectionReason" class="text-sm"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Missions Page -->
-            <div id="missionsPage" class="hidden p-4 space-y-4 max-w-7xl mx-auto">
-                <div class="flex items-center justify-between mb-6">
-                    <button type="button" onclick="showHome()" class="secondary-btn px-4 py-2 flex items-center">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back
-                    </button>
-                    <h2 class="text-xl font-bold">All Missions</h2>
-                    <div class="w-20"></div>
-                </div>
-                
-                <div id="missionsList" class="space-y-4">
-                    <!-- Missions will be loaded from database -->
-                </div>
-            </div>
-
-            <!-- Leaderboard Page -->
-            <div id="leaderboardPage" class="hidden p-4 space-y-4 max-w-7xl mx-auto">
-                <div class="flex items-center justify-between mb-6">
-                    <button type="button" onclick="showHome()" class="secondary-btn px-4 py-2 flex items-center">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back
-                    </button>
-                    <h2 class="text-xl font-bold">Leaderboard</h2>
-                    <div class="w-20"></div>
-                </div>
-                
-                <div class="glass-card p-4">
-                    <div id="leaderboardList" class="space-y-3">
-                        <!-- Leaderboard will be loaded from database -->
+            
+            <!-- Purchase Modal -->
+            <div id="purchaseModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+                <div class="bg-white rounded-2xl w-full max-w-md">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-4">Confirm Purchase</h3>
+                        
+                        <div id="purchaseDetails" class="mb-6">
+                            <!-- Purchase details will be loaded here -->
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button id="cancelPurchase" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-medium">
+                                Cancel
+                            </button>
+                            <button id="confirmPurchase" class="flex-1 bg-green-500 text-white py-3 rounded-lg font-medium hover:bg-green-600">
+                                Confirm
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Shop Page -->
-            <div id="shopPage" class="hidden p-4 space-y-4 max-w-7xl mx-auto">
-                <div class="flex items-center justify-between mb-6">
-                    <button type="button" onclick="showHome()" class="secondary-btn px-4 py-2 flex items-center">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back
-                    </button>
-                    <h2 class="text-xl font-bold">Rewards Shop</h2>
-                    <div class="w-20"></div>
-                </div>
-                
-                <div id="shopItems" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Shop items will be loaded from database -->
-                </div>
-            </div>
-
-            <!-- Activities Page -->
-            <div id="activitiesPage" class="hidden p-4 space-y-4 max-w-7xl mx-auto">
-                <div class="flex items-center justify-between mb-6">
-                    <button type="button" onclick="showHome()" class="secondary-btn px-4 py-2 flex items-center">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back
-                    </button>
-                    <h2 class="text-xl font-bold">My Activities</h2>
-                    <div class="w-20"></div>
-                </div>
-                
-                <div id="activitiesList" class="space-y-3">
-                    <!-- Activities will be loaded from database -->
-                </div>
-            </div>
-
-            <!-- Notifications Page -->
-            <div id="notificationsPage" class="hidden p-4 space-y-4 max-w-7xl mx-auto">
-                <div class="flex items-center justify-between mb-6">
-                    <button type="button" onclick="showHome()" class="secondary-btn px-4 py-2 flex items-center">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back
-                    </button>
-                    <h2 class="text-xl font-bold">Notifications</h2>
-                    <button type="button" onclick="markAllAsRead()" class="text-sm text-gray-400 hover:text-white">
-                        Mark all read
-                    </button>
-                </div>
-                
-                <div id="notificationsList" class="space-y-3">
-                    <!-- Notifications will be loaded from database -->
+            
+            <!-- SOS Confirmation Modal -->
+            <div id="sosModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+                <div class="bg-white rounded-2xl w-full max-w-md">
+                    <div class="p-6">
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2">Emergency Alert</h3>
+                            <p class="text-gray-600">Are you sure you want to trigger an emergency SOS?</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <button id="confirmSOS" class="w-full bg-red-500 text-white py-3 rounded-lg font-bold hover:bg-red-600">
+                                YES, SEND EMERGENCY ALERT
+                            </button>
+                            <button id="cancelSOS" class="w-full bg-gray-200 text-gray-800 py-3 rounded-lg font-medium">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
-
-        <!-- Mobile Bottom Navigation -->
-        <nav class="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/90 backdrop-blur-xl border-t border-white/10 z-50">
-            <div class="h-full flex items-center justify-around px-4">
-                <button type="button" onclick="showHome()" class="flex flex-col items-center gap-1 text-blue-400" data-page="home">
-                    <i class="fas fa-home text-xl"></i>
-                    <span class="text-xs">Home</span>
-                </button>
-                
-                <button type="button" onclick="showMissions()" class="flex flex-col items-center gap-1 text-gray-400" data-page="missions">
-                    <i class="fas fa-tasks text-xl"></i>
-                    <span class="text-xs">Missions</span>
-                </button>
-                
-                <button type="button" onclick="showLeaderboard()" class="flex flex-col items-center gap-1 text-gray-400" data-page="leaderboard">
-                    <i class="fas fa-trophy text-xl"></i>
-                    <span class="text-xs">Leaderboard</span>
-                </button>
-                
-                <button type="button" onclick="showShop()" class="flex flex-col items-center gap-1 text-gray-400" data-page="shop">
-                    <i class="fas fa-gift text-xl"></i>
-                    <span class="text-xs">Shop</span>
-                </button>
-                
-                <button type="button" onclick="showNotifications()" class="relative flex flex-col items-center gap-1 text-gray-400" data-page="notifications">
-                    <i class="fas fa-bell text-xl"></i>
-                    <span class="text-xs">Alerts</span>
-                    <div id="mobileNotificationDot" class="notification-dot hidden"></div>
-                </button>
-            </div>
-        </nav>
-    </div>
-
-    <!-- Mission Modal -->
-    <div id="missionModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
-        <div class="min-h-screen flex items-center justify-center p-4">
-            <div class="glass-card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold" id="modalMissionTitle">Mission Details</h3>
-                        <button type="button" onclick="closeMissionModal()" class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div id="modalMissionContent" class="space-y-4"></div>
-                    
-                    <div class="mt-6 space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-camera mr-2"></i>
-                                Upload Photo/Video
-                            </label>
-                            <input 
-                                type="file" 
-                                id="mediaInput" 
-                                accept="image/*,video/*"
-                                class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-black"
-                            >
-                            <div id="mediaPreview" class="mt-3"></div>
-                        </div>
-                        
-                        <button type="button" onclick="submitMission()" id="submitMissionBtn" class="w-full h-12 rounded-xl primary-btn font-semibold">
-                            <i class="fas fa-paper-plane mr-2"></i>
-                            Submit Mission
-                        </button>
-                    </div>
+        
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed top-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-xl z-50 transform transition-transform duration-300 translate-y-[-100px]">
+            <div class="flex items-center">
+                <i id="toastIcon" class="fas fa-info-circle mr-3"></i>
+                <div>
+                    <div id="toastTitle" class="font-bold"></div>
+                    <div id="toastMessage" class="text-sm"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Profile Modal -->
-    <div id="profileModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
-        <div class="min-h-screen flex items-center justify-center p-4">
-            <div class="glass-card max-w-md w-full">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold">Your Profile</h3>
-                        <button type="button" onclick="closeProfile()" class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="space-y-6">
-                        <div class="text-center">
-                            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-4xl mx-auto mb-4">
-                                <i class="fas fa-user text-white"></i>
-                            </div>
-                            <h4 class="text-xl font-bold" id="profileName">Loading...</h4>
-                            <p class="text-gray-400" id="profileEmail">Loading...</p>
-                            <p class="text-sm text-gray-400 mt-1" id="profileTeam">Team: Loading...</p>
-                        </div>
-                        
-                        <div class="glass-card rounded-xl p-4">
-                            <div class="flex items-center justify-between">
-                                <span class="text-gray-300">Total Coins</span>
-                                <span class="text-xl font-bold flex items-center gap-2">
-                                    <i class="fas fa-coins text-yellow-400"></i>
-                                    <span id="profileCoins">0</span>
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <button type="button" onclick="handleLogout()" class="w-full h-12 rounded-xl secondary-btn font-medium">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            Sign Out
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toastContainer" class="fixed top-24 right-4 z-50 space-y-2 max-w-md"></div>
-
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
-        // ============================
-        // CONFIGURATION
-        // ============================
-        
-        // Supabase Configuration
-        const SUPABASE_URL = 'https://wllpidtujqnfohpsfqyy.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_9lIP3MDWOz2_Udkrhx4tjw_cpFkyuRa';
-        
-        // Mapbox Configuration
-        mapboxgl.accessToken = 'pk.eyJ1IjoianVzYSIsImEiOiJjbTZnc2Y0a2swNHFuMmxwbzBxYm80aTh3In0.RHyfezw9C01ZXlgOiymD0Q';
+        // Configuration
+        const SUPABASE_URL = 'https://liirflttnoithyikipiz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpaXJmbHR0bm9pdGh5aWtpcGl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ3MzQ1NTksImV4cCI6MjA1MDMxMDU1OX0.nrI2UjtzHIFU1BOeeHrDpAnU3gvFXYOe8_vzhq6XK2Q';
+        const MAPBOX_TOKEN = 'pk.eyJ1IjoibmFtYmlhbWFwcyIsImEiOiJjbTBtbmgyNWYwNmlwMmpwNm5pd2s4cmw5In0.5V3nQ_31OMRWhbqIuR2JZg';
         
         // Initialize Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        mapboxgl.accessToken = MAPBOX_TOKEN;
         
-        // ============================
-        // APP STATE
-        // ============================
+        // App State
         let currentUser = null;
         let userProfile = null;
+        let currentLocation = null;
         let map = null;
-        let currentPage = 'home';
-        let eventTimerInterval = null;
+        let playerMarker = null;
+        let zonesLayer = null;
+        let watchId = null;
         let currentMission = null;
-        let missions = [];
-        let userMissions = [];
-        let zones = [];
-        let prizes = [];
-        let submissions = [];
-        let notifications = [];
-        let leaderboard = [];
-
-        // ============================
-        // INITIALIZATION
-        // ============================
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Treasure Hunt App Initialized');
-            checkExistingSession();
+        let currentPurchase = null;
+        let realtimeChannel = null;
+        
+        // DOM Elements
+        const authModal = document.getElementById('authModal');
+        const app = document.getElementById('app');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const loginTab = document.getElementById('loginTab');
+        const signupTab = document.getElementById('signupTab');
+        const authError = document.getElementById('authError');
+        const timer = document.getElementById('timer');
+        const userCoins = document.getElementById('userCoins');
+        const userName = document.getElementById('userName');
+        const homeUserName = document.getElementById('homeUserName');
+        const homeCoins = document.getElementById('homeCoins');
+        const missionsDone = document.getElementById('missionsDone');
+        const profileBtn = document.getElementById('profileBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const navBtns = document.querySelectorAll('.nav-btn');
+        const pages = document.querySelectorAll('.page');
+        const profileModal = document.getElementById('profileModal');
+        const closeProfile = document.getElementById('closeProfile');
+        const profileName = document.getElementById('profileName');
+        const profileTeam = document.getElementById('profileTeam');
+        const profileCoins = document.getElementById('profileCoins');
+        const profileCompleted = document.getElementById('profileCompleted');
+        const profileSince = document.getElementById('profileSince');
+        const mapElement = document.getElementById('map');
+        const refreshLocation = document.getElementById('refreshLocation');
+        const activeMissionsList = document.getElementById('activeMissionsList');
+        const missionsList = document.getElementById('missionsList');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const userRank = document.getElementById('userRank');
+        const userScore = document.getElementById('userScore');
+        const shopCoins = document.getElementById('shopCoins');
+        const prizesList = document.getElementById('prizesList');
+        const triggerSOS = document.getElementById('triggerSOS');
+        const sosModal = document.getElementById('sosModal');
+        const confirmSOS = document.getElementById('confirmSOS');
+        const cancelSOS = document.getElementById('cancelSOS');
+        const missionModal = document.getElementById('missionModal');
+        const missionTitle = document.getElementById('missionTitle');
+        const missionPoints = document.getElementById('missionPoints');
+        const missionDescription = document.getElementById('missionDescription');
+        const missionStatusBadge = document.getElementById('missionStatusBadge');
+        const closeMission = document.getElementById('closeMission');
+        const submissionSection = document.getElementById('submissionSection');
+        const missionMedia = document.getElementById('missionMedia');
+        const imagePreview = document.getElementById('imagePreview');
+        const videoPreview = document.getElementById('videoPreview');
+        const previewImage = document.getElementById('previewImage');
+        const previewVideo = document.getElementById('previewVideo');
+        const gpsStatus = document.getElementById('gpsStatus');
+        const submitMission = document.getElementById('submitMission');
+        const completedView = document.getElementById('completedView');
+        const pendingView = document.getElementById('pendingView');
+        const rejectedView = document.getElementById('rejectedView');
+        const completionTime = document.getElementById('completionTime');
+        const submissionDetails = document.getElementById('submissionDetails');
+        const rejectionReason = document.getElementById('rejectionReason');
+        const purchaseModal = document.getElementById('purchaseModal');
+        const purchaseDetails = document.getElementById('purchaseDetails');
+        const cancelPurchase = document.getElementById('cancelPurchase');
+        const confirmPurchase = document.getElementById('confirmPurchase');
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastTitle = document.getElementById('toastTitle');
+        const toastMessage = document.getElementById('toastMessage');
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', init);
+        
+        async function init() {
+            // Check for existing session
+            const { data: { session } } = await supabase.auth.getSession();
             
-            // Setup media preview
-            setupMediaPreview();
-        });
-
-        async function checkExistingSession() {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                
-                if (session) {
-                    console.log('Found existing session:', session.user.email);
-                    currentUser = session.user;
-                    await loadUserProfile();
-                    showMainApp();
-                }
-            } catch (error) {
-                console.error('Session check error:', error);
+            if (session) {
+                currentUser = session.user;
+                await loadUserProfile();
+                startApp();
+            } else {
+                showAuthModal();
+            }
+            
+            setupEventListeners();
+        }
+        
+        function setupEventListeners() {
+            // Auth
+            loginTab.addEventListener('click', () => switchAuthTab('login'));
+            signupTab.addEventListener('click', () => switchAuthTab('signup'));
+            loginForm.addEventListener('submit', handleLogin);
+            signupForm.addEventListener('submit', handleSignup);
+            
+            // Navigation
+            navBtns.forEach(btn => {
+                btn.addEventListener('click', () => switchPage(btn.dataset.page));
+            });
+            
+            profileBtn.addEventListener('click', () => profileModal.classList.remove('hidden'));
+            closeProfile.addEventListener('click', () => profileModal.classList.add('hidden'));
+            logoutBtn.addEventListener('click', handleLogout);
+            
+            // Map
+            refreshLocation.addEventListener('click', centerMapOnUser);
+            
+            // Missions
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => filterMissions(btn.dataset.filter));
+            });
+            
+            // SOS
+            triggerSOS.addEventListener('click', () => sosModal.classList.remove('hidden'));
+            confirmSOS.addEventListener('click', sendSOSAlert);
+            cancelSOS.addEventListener('click', () => sosModal.classList.add('hidden'));
+            
+            // Mission Modal
+            closeMission.addEventListener('click', () => missionModal.classList.add('hidden'));
+            missionMedia.addEventListener('change', handleMediaUpload);
+            submitMission.addEventListener('click', handleMissionSubmit);
+            
+            // Purchase
+            cancelPurchase.addEventListener('click', () => purchaseModal.classList.add('hidden'));
+            confirmPurchase.addEventListener('click', handlePurchase);
+        }
+        
+        function switchAuthTab(tab) {
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                loginTab.classList.add('border-blue-500', 'text-blue-600');
+                signupTab.classList.remove('border-blue-500', 'text-blue-600');
+            } else {
+                loginForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+                signupTab.classList.add('border-blue-500', 'text-blue-600');
+                loginTab.classList.remove('border-blue-500', 'text-blue-600');
             }
         }
-
-        // ============================
-        // AUTH FUNCTIONS
-        // ============================
-        function toggleAuthMode() {
-            const loginForm = document.getElementById('loginForm');
-            const signupForm = document.getElementById('signupForm');
-            
-            loginForm.classList.toggle('hidden');
-            signupForm.classList.toggle('hidden');
-            
-            // Clear errors
-            document.getElementById('authError').classList.add('hidden');
-            document.getElementById('signupError').classList.add('hidden');
-        }
-
-        async function handleLogin() {
+        
+        async function handleLogin(e) {
+            e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
-            if (!email || !password) {
-                showError('authError', 'Please fill in all fields');
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (error) {
+                showAuthError(error.message);
                 return;
             }
             
-            const loginBtn = document.getElementById('loginBtn');
-            const loginBtnText = document.getElementById('loginBtnText');
-            const loginBtnSpinner = document.getElementById('loginBtnSpinner');
-            
-            loginBtn.disabled = true;
-            loginBtnText.textContent = 'Signing in...';
-            loginBtnSpinner.classList.remove('hidden');
-            
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
-                
-                if (error) throw error;
-                
-                console.log('Login successful:', email);
-                currentUser = data.user;
-                await loadUserProfile();
-                showMainApp();
-                showToast('Welcome to the Treasure Hunt! 🎯', 'success');
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                showError('authError', error.message || 'Invalid credentials');
-            } finally {
-                loginBtn.disabled = false;
-                loginBtnText.textContent = 'Sign In to Play';
-                loginBtnSpinner.classList.add('hidden');
-            }
+            currentUser = data.user;
+            await loadUserProfile();
+            startApp();
+            authModal.classList.add('hidden');
         }
-
-        async function handleSignup() {
+        
+        async function handleSignup(e) {
+            e.preventDefault();
             const name = document.getElementById('signupName').value;
+            const team = document.getElementById('signupTeam').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
-            const team = document.getElementById('signupTeam').value;
             
-            if (!name || !email || !password) {
-                showError('signupError', 'Please fill in all required fields');
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: { name }
+                }
+            });
+            
+            if (error) {
+                showAuthError(error.message);
                 return;
             }
             
-            if (password.length < 6) {
-                showError('signupError', 'Password must be at least 6 characters');
-                return;
+            // Update profile with team name
+            if (team) {
+                await supabase
+                    .from('profiles')
+                    .update({ team_name: team })
+                    .eq('id', data.user.id);
             }
             
-            const signupBtn = document.getElementById('signupBtn');
-            const signupBtnText = document.getElementById('signupBtnText');
-            const signupBtnSpinner = document.getElementById('signupBtnSpinner');
+            currentUser = data.user;
+            await loadUserProfile();
+            startApp();
+            authModal.classList.add('hidden');
+        }
+        
+        function showAuthError(message) {
+            authError.textContent = message;
+            authError.classList.remove('hidden');
+            setTimeout(() => authError.classList.add('hidden'), 5000);
+        }
+        
+        function showAuthModal() {
+            authModal.classList.remove('hidden');
+        }
+        
+        async function loadUserProfile() {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single();
             
-            signupBtn.disabled = true;
-            signupBtnText.textContent = 'Creating account...';
-            signupBtnSpinner.classList.remove('hidden');
+            if (!error) {
+                userProfile = data;
+                updateUserUI();
+            }
+        }
+        
+        function updateUserUI() {
+            userName.textContent = userProfile.name || 'Player';
+            homeUserName.textContent = userProfile.name || 'Player';
+            profileName.textContent = userProfile.name || 'Player';
             
-            try {
-                // Sign up without email confirmation for testing
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            name: name,
-                            team_name: team || null
-                        }
+            const coins = userProfile.coins || 0;
+            userCoins.textContent = `${coins} coins`;
+            homeCoins.textContent = coins;
+            profileCoins.textContent = `${coins} coins`;
+            shopCoins.textContent = `${coins} coins`;
+            
+            if (userProfile.team_name) {
+                profileTeam.textContent = userProfile.team_name;
+            } else {
+                profileTeam.textContent = 'No team';
+            }
+            
+            profileSince.textContent = new Date(userProfile.created_at).toLocaleDateString();
+            
+            // Load completed missions count
+            loadCompletedMissionsCount();
+        }
+        
+        async function loadCompletedMissionsCount() {
+            const { data, error } = await supabase
+                .from('user_missions')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .eq('status', 'completed');
+            
+            if (!error) {
+                const count = data.length;
+                missionsDone.textContent = count;
+                profileCompleted.textContent = count;
+            }
+        }
+        
+        function startApp() {
+            app.classList.remove('hidden');
+            initMap();
+            startLocationTracking();
+            loadGameState();
+            loadZones();
+            loadMissions();
+            loadLeaderboard();
+            loadPrizes();
+            setupRealtime();
+            switchPage('home');
+        }
+        
+        function initMap() {
+            // Default to Windhoek, Namibia
+            const defaultLocation = [17.0832, -22.5609];
+            
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: defaultLocation,
+                zoom: 12
+            });
+            
+            map.on('load', () => {
+                // Add player marker
+                playerMarker = new mapboxgl.Marker({ color: '#3b82f6' })
+                    .setLngLat(defaultLocation)
+                    .setPopup(new mapboxgl.Popup().setHTML('<h3 class="font-bold">Your Location</h3>'))
+                    .addTo(map);
+                
+                // Add zones layer
+                map.addSource('zones', {
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: []
                     }
                 });
                 
-                if (error) throw error;
-                
-                console.log('Signup successful:', email);
-                currentUser = data.user;
-                
-                // Automatically sign in after signup
-                const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
+                map.addLayer({
+                    id: 'zones-fill',
+                    type: 'fill',
+                    source: 'zones',
+                    paint: {
+                        'fill-color': '#3b82f6',
+                        'fill-opacity': 0.2
+                    }
                 });
                 
-                if (loginError) throw loginError;
+                map.addLayer({
+                    id: 'zones-outline',
+                    type: 'line',
+                    source: 'zones',
+                    paint: {
+                        'line-color': '#3b82f6',
+                        'line-width': 2
+                    }
+                });
                 
-                await loadUserProfile();
-                showMainApp();
-                showToast('Account created successfully! Welcome! 🎉', 'success');
-                
-            } catch (error) {
-                console.error('Signup error:', error);
-                showError('signupError', error.message || 'Error creating account');
-            } finally {
-                signupBtn.disabled = false;
-                signupBtnText.textContent = 'Create Account & Start';
-                signupBtnSpinner.classList.add('hidden');
-            }
-        }
-
-        function showError(elementId, message) {
-            const errorDiv = document.getElementById(elementId);
-            errorDiv.textContent = message;
-            errorDiv.classList.remove('hidden');
-        }
-
-        // ============================
-        // USER PROFILE & DATA
-        // ============================
-        async function loadUserProfile() {
-            if (!currentUser) return;
-            
-            try {
-                // Get user profile from database
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', currentUser.id)
-                    .single();
-                
-                if (error) {
-                    console.error('Profile load error:', error);
+                // Add click handler for zones
+                map.on('click', 'zones-fill', (e) => {
+                    const zone = e.features[0].properties;
+                    showToast('Zone Entered', `You're in ${zone.name}`);
                     
-                    // Create profile if it doesn't exist
-                    const { data: newProfile, error: createError } = await supabase
-                        .from('profiles')
-                        .insert({
-                            id: currentUser.id,
-                            email: currentUser.email,
-                            name: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
-                            team_name: currentUser.user_metadata?.team_name || null,
-                            coins: 100,
-                            is_admin: false
-                        })
-                        .select()
-                        .single();
-                    
-                    if (createError) throw createError;
-                    userProfile = newProfile;
-                } else {
-                    userProfile = profile;
-                }
-                
-                console.log('User profile loaded:', userProfile.name);
-                
-                // Load all app data
-                await loadAppData();
-                
-                // Update UI
-                updateUI();
-                
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                showToast('Error loading profile data', 'error');
+                    // Check if missions need to be unlocked
+                    checkZoneForMissions(zone.id);
+                });
+            });
+        }
+        
+        function startLocationTracking() {
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        currentLocation = {
+                            lng: position.coords.longitude,
+                            lat: position.coords.latitude
+                        };
+                        
+                        // Update marker
+                        if (playerMarker) {
+                            playerMarker.setLngLat([currentLocation.lng, currentLocation.lat]);
+                        }
+                        
+                        // Update GPS status
+                        gpsStatus.innerHTML = `
+                            <div class="flex justify-between">
+                                <span>Lat: ${currentLocation.lat.toFixed(6)}</span>
+                                <span>Lng: ${currentLocation.lng.toFixed(6)}</span>
+                            </div>
+                            <div class="text-green-600 mt-1">
+                                <i class="fas fa-check-circle mr-1"></i> GPS Active
+                            </div>
+                        `;
+                        
+                        // Check if we entered any zones
+                        checkCurrentLocationForZones();
+                    },
+                    (error) => {
+                        console.error('GPS Error:', error);
+                        gpsStatus.textContent = 'GPS unavailable. Please enable location services.';
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 10000,
+                        timeout: 5000
+                    }
+                );
             }
         }
-
-        async function loadAppData() {
-            try {
-                await Promise.all([
-                    loadMissions(),
-                    loadZones(),
-                    loadPrizes(),
-                    loadLeaderboard(),
-                    loadNotifications(),
-                    loadUserMissions(),
-                    loadSubmissions()
-                ]);
-                
-                console.log('All app data loaded');
-                
-            } catch (error) {
-                console.error('Error loading app data:', error);
+        
+        function centerMapOnUser() {
+            if (currentLocation && map) {
+                map.flyTo({
+                    center: [currentLocation.lng, currentLocation.lat],
+                    zoom: 15
+                });
             }
         }
-
-        async function loadMissions() {
-            try {
-                const { data, error } = await supabase
-                    .from('missions')
-                    .select(`
-                        *,
-                        zones (name)
-                    `)
-                    .eq('active', true)
-                    .order('created_at', { ascending: true });
-                
-                if (error) throw error;
-                missions = data || [];
-                console.log(`Loaded ${missions.length} missions`);
-                
-            } catch (error) {
-                console.error('Error loading missions:', error);
-                missions = [];
-            }
-        }
-
-        async function loadZones() {
-            try {
-                const { data, error } = await supabase
-                    .from('zones')
-                    .select('*')
-                    .eq('active', true);
-                
-                if (error) throw error;
-                zones = data || [];
-                console.log(`Loaded ${zones.length} zones`);
-                
-            } catch (error) {
-                console.error('Error loading zones:', error);
-                zones = [];
-            }
-        }
-
-        async function loadPrizes() {
-            try {
-                const { data, error } = await supabase
-                    .from('prizes')
-                    .select('*')
-                    .eq('active', true)
-                    .gt('remaining_quantity', 0)
-                    .order('price', { ascending: true });
-                
-                if (error) throw error;
-                prizes = data || [];
-                console.log(`Loaded ${prizes.length} prizes`);
-                
-            } catch (error) {
-                console.error('Error loading prizes:', error);
-                prizes = [];
-            }
-        }
-
-        async function loadLeaderboard() {
-            try {
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('id, name, team_name, coins')
-                    .order('coins', { ascending: false })
-                    .limit(20);
-                
-                if (error) throw error;
-                leaderboard = data || [];
-                console.log(`Loaded ${leaderboard.length} leaderboard entries`);
-                
-            } catch (error) {
-                console.error('Error loading leaderboard:', error);
-                leaderboard = [];
-            }
-        }
-
-        async function loadNotifications() {
-            try {
-                const { data, error } = await supabase
-                    .from('notifications')
-                    .select('*')
-                    .eq('user_id', userProfile.id)
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                
-                if (error) throw error;
-                notifications = data || [];
-                
-                updateNotificationDot();
-                console.log(`Loaded ${notifications.length} notifications`);
-                
-            } catch (error) {
-                console.error('Error loading notifications:', error);
-                notifications = [];
-            }
-        }
-
-        async function loadUserMissions() {
-            try {
-                const { data, error } = await supabase
-                    .from('user_missions')
-                    .select(`
-                        *,
-                        missions (*, zones (name))
-                    `)
-                    .eq('user_id', userProfile.id);
-                
-                if (error) throw error;
-                userMissions = data || [];
-                console.log(`Loaded ${userMissions.length} user missions`);
-                
-            } catch (error) {
-                console.error('Error loading user missions:', error);
-                userMissions = [];
-            }
-        }
-
-        async function loadSubmissions() {
-            try {
-                const { data, error } = await supabase
-                    .from('submissions')
-                    .select(`
-                        *,
-                        missions (title)
-                    `)
-                    .eq('user_id', userProfile.id)
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                submissions = data || [];
-                console.log(`Loaded ${submissions.length} submissions`);
-                
-            } catch (error) {
-                console.error('Error loading submissions:', error);
-                submissions = [];
-            }
-        }
-
-        // ============================
-        // MAIN APP FUNCTIONS
-        // ============================
-        function showMainApp() {
-            // Hide auth screen
-            document.getElementById('authScreen').classList.add('hidden');
+        
+        async function loadGameState() {
+            const { data, error } = await supabase
+                .from('game_state')
+                .select('*')
+                .single();
             
-            // Show main app
-            document.getElementById('mainApp').classList.remove('hidden');
-            
-            // Start timer
-            startEventTimer();
-            
-            // Initialize map
-            initializeMap();
-            
-            // Show home page
-            showHome();
-        }
-
-        function updateUI() {
-            if (userProfile) {
-                document.getElementById('coinDisplay').textContent = userProfile.coins;
-                document.getElementById('profileName').textContent = userProfile.name;
-                document.getElementById('profileEmail').textContent = userProfile.email;
-                document.getElementById('profileTeam').textContent = userProfile.team_name ? `Team: ${userProfile.team_name}` : 'No team';
-                document.getElementById('profileCoins').textContent = userProfile.coins;
+            if (!error && data) {
+                updateTimer(data);
             }
         }
-
-        function startEventTimer() {
-            if (eventTimerInterval) {
-                clearInterval(eventTimerInterval);
-            }
-            
-            // Set event to end in 8 hours from now
-            const endTime = new Date();
-            endTime.setHours(endTime.getHours() + 8);
-            
-            function updateTimer() {
+        
+        function updateTimer(gameState) {
+            function update() {
                 const now = new Date();
-                const diff = endTime - now;
+                const end = new Date(gameState.event_end);
+                const diff = end - now;
                 
-                if (diff <= 0) {
-                    document.getElementById('eventTimer').textContent = '00:00:00';
-                    clearInterval(eventTimerInterval);
+                if (diff <= 0 || gameState.is_paused) {
+                    timer.textContent = gameState.is_paused ? 'PAUSED' : '00:00:00';
                     return;
                 }
                 
@@ -1093,947 +989,738 @@
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000);
                 
-                document.getElementById('eventTimer').textContent = 
-                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                timer.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }
             
-            updateTimer();
-            eventTimerInterval = setInterval(updateTimer, 1000);
+            update();
+            setInterval(update, 1000);
         }
-
-        function initializeMap() {
-            try {
-                // Default coordinates (Windhoek, Namibia)
-                const defaultCoords = [17.0832, -22.5609];
-                
-                map = new mapboxgl.Map({
-                    container: 'map',
-                    style: 'mapbox://styles/mapbox/dark-v11',
-                    center: defaultCoords,
-                    zoom: 12
+        
+        async function loadZones() {
+            const { data, error } = await supabase
+                .from('zones')
+                .select('*')
+                .eq('is_active', true);
+            
+            if (!error && data.length > 0) {
+                updateZonesOnMap(data);
+            }
+        }
+        
+        function updateZonesOnMap(zones) {
+            const features = zones.map(zone => ({
+                type: 'Feature',
+                geometry: zone.coordinates,
+                properties: {
+                    id: zone.id,
+                    name: zone.name,
+                    description: zone.description
+                }
+            }));
+            
+            const source = map.getSource('zones');
+            if (source) {
+                source.setData({
+                    type: 'FeatureCollection',
+                    features
                 });
+            }
+        }
+        
+        async function checkCurrentLocationForZones() {
+            if (!currentLocation) return;
+            
+            const { data: zones } = await supabase
+                .from('zones')
+                .select('*')
+                .eq('is_active', true);
+            
+            if (!zones) return;
+            
+            zones.forEach(zone => {
+                if (isPointInZone(currentLocation, zone.coordinates)) {
+                    showToast('Zone Entered', `Welcome to ${zone.name}!`);
+                    checkZoneForMissions(zone.id);
+                }
+            });
+        }
+        
+        function isPointInZone(point, geometry) {
+            // Simplified point-in-polygon check
+            // In production, use turf.js for accurate geospatial operations
+            return true; // Placeholder
+        }
+        
+        async function checkZoneForMissions(zoneId) {
+            // Get missions for this zone
+            const { data: missions } = await supabase
+                .from('missions')
+                .select('*')
+                .eq('zone_id', zoneId)
+                .eq('status', 'active');
+            
+            if (!missions || missions.length === 0) return;
+            
+            // Check user progress for these missions
+            const { data: progress } = await supabase
+                .from('user_missions')
+                .select('*')
+                .in('mission_id', missions.map(m => m.id))
+                .eq('user_id', currentUser.id);
+            
+            // Unlock missions that aren't already unlocked/completed
+            missions.forEach(async mission => {
+                const existing = progress?.find(p => p.mission_id === mission.id);
                 
-                map.addControl(new mapboxgl.NavigationControl());
+                if (!existing) {
+                    // Create user_mission record with 'unlocked' status
+                    await supabase
+                        .from('user_missions')
+                        .upsert({
+                            user_id: currentUser.id,
+                            mission_id: mission.id,
+                            status: 'unlocked'
+                        });
+                    
+                    showToast('New Mission!', `"${mission.title}" is now available!`);
+                }
+            });
+            
+            // Refresh missions display
+            loadActiveMissions();
+            loadAllMissions();
+        }
+        
+        async function loadActiveMissions() {
+            const { data, error } = await supabase
+                .from('user_missions')
+                .select(`
+                    *,
+                    missions (*)
+                `)
+                .eq('user_id', currentUser.id)
+                .in('status', ['unlocked', 'pending'])
+                .order('created_at', { ascending: false });
+            
+            if (error || !data) return;
+            
+            activeMissionsList.innerHTML = '';
+            
+            if (data.length === 0) {
+                activeMissionsList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-compass text-4xl mb-2"></i>
+                        <p>Enter a zone to unlock missions!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            data.forEach(item => {
+                const mission = item.missions;
+                if (!mission) return;
                 
-                // Add user marker
-                new mapboxgl.Marker({ color: '#3b82f6' })
-                    .setLngLat(defaultCoords)
-                    .setPopup(new mapboxgl.Popup().setHTML('<h3 class="font-bold">Your Location</h3>'))
-                    .addTo(map);
+                const missionElement = createMissionElement(mission, item.status);
+                missionElement.addEventListener('click', () => openMissionModal(mission, item.status));
+                activeMissionsList.appendChild(missionElement);
+            });
+        }
+        
+        async function loadAllMissions(filter = 'all') {
+            const { data, error } = await supabase
+                .from('user_missions')
+                .select(`
+                    *,
+                    missions (*)
+                `)
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false });
+            
+            if (error) return;
+            
+            missionsList.innerHTML = '';
+            
+            let filteredData = data;
+            if (filter !== 'all') {
+                filteredData = data.filter(item => item.status === filter);
+            }
+            
+            if (filteredData.length === 0) {
+                missionsList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>No missions found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filteredData.forEach(item => {
+                const mission = item.missions;
+                if (!mission) return;
                 
-                // Add zone markers
-                zones.forEach(zone => {
-                    try {
-                        let coords = defaultCoords;
-                        
-                        if (zone.coordinates && typeof zone.coordinates === 'object') {
-                            coords = zone.coordinates.coordinates || defaultCoords;
-                        } else if (zone.latitude && zone.longitude) {
-                            coords = [zone.longitude, zone.latitude];
-                        }
-                        
-                        new mapboxgl.Marker({ color: '#10b981' })
-                            .setLngLat(coords)
-                            .setPopup(new mapboxgl.Popup().setHTML(`
-                                <h3 class="font-bold">${zone.name}</h3>
-                                <p class="text-sm">${zone.description || 'Mission Zone'}</p>
-                            `))
-                            .addTo(map);
-                    } catch (e) {
-                        console.error('Error adding zone marker:', e);
+                const missionElement = createMissionElement(mission, item.status);
+                missionElement.addEventListener('click', () => openMissionModal(mission, item.status));
+                missionsList.appendChild(missionElement);
+            });
+        }
+        
+        function createMissionElement(mission, status) {
+            const statusColors = {
+                'locked': 'status-locked',
+                'unlocked': 'status-unlocked',
+                'pending': 'status-pending',
+                'completed': 'status-completed',
+                'rejected': 'status-rejected'
+            };
+            
+            const statusText = {
+                'locked': 'Locked',
+                'unlocked': 'Available',
+                'pending': 'Pending Review',
+                'completed': 'Completed',
+                'rejected': 'Rejected'
+            };
+            
+            return document.createElement('div').innerHTML = `
+                <div class="glass rounded-xl p-4 cursor-pointer hover:shadow-md transition duration-200">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-gray-800">${mission.title}</h4>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${statusColors[status]}">
+                            ${statusText[status]}
+                        </span>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-3">${mission.description.substring(0, 100)}...</p>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center text-yellow-600">
+                            <i class="fas fa-coins mr-1"></i>
+                            <span class="font-bold">${mission.points}</span>
+                        </div>
+                        <div class="text-gray-500 text-sm">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            Zone Mission
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function filterMissions(filter) {
+            // Update active button
+            filterBtns.forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.remove('bg-gray-200');
+                    btn.classList.add('bg-blue-500', 'text-white');
+                } else {
+                    btn.classList.add('bg-gray-200');
+                    btn.classList.remove('bg-blue-500', 'text-white');
+                }
+            });
+            
+            loadAllMissions(filter);
+        }
+        
+        async function openMissionModal(mission, status) {
+            currentMission = mission;
+            
+            missionTitle.textContent = mission.title;
+            missionPoints.textContent = `${mission.points} coins`;
+            missionDescription.textContent = mission.description;
+            
+            // Set status badge
+            const statusConfig = getStatusConfig(status);
+            missionStatusBadge.className = `inline-block px-3 py-1 rounded-full text-sm font-medium mb-4 ${statusConfig.class}`;
+            missionStatusBadge.textContent = statusConfig.text;
+            
+            // Show appropriate view based on status
+            submissionSection.classList.add('hidden');
+            completedView.classList.add('hidden');
+            pendingView.classList.add('hidden');
+            rejectedView.classList.add('hidden');
+            
+            if (status === 'unlocked') {
+                submissionSection.classList.remove('hidden');
+                // Reset media previews
+                imagePreview.classList.add('hidden');
+                videoPreview.classList.add('hidden');
+                missionMedia.value = '';
+                submitMission.disabled = false;
+            } else if (status === 'completed') {
+                completedView.classList.remove('hidden');
+                await loadSubmissionDetails(mission.id);
+            } else if (status === 'pending') {
+                pendingView.classList.remove('hidden');
+            } else if (status === 'rejected') {
+                rejectedView.classList.remove('hidden');
+                await loadRejectionReason(mission.id);
+            }
+            
+            missionModal.classList.remove('hidden');
+        }
+        
+        function getStatusConfig(status) {
+            const configs = {
+                'locked': { class: 'status-locked', text: 'Locked' },
+                'unlocked': { class: 'status-unlocked', text: 'Available' },
+                'pending': { class: 'status-pending', text: 'Pending Review' },
+                'completed': { class: 'status-completed', text: 'Completed' },
+                'rejected': { class: 'status-rejected', text: 'Rejected' }
+            };
+            return configs[status] || configs.locked;
+        }
+        
+        async function loadSubmissionDetails(missionId) {
+            const { data, error } = await supabase
+                .from('submissions')
+                .select('*')
+                .eq('mission_id', missionId)
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            
+            if (!error && data[0]) {
+                const submission = data[0];
+                completionTime.textContent = new Date(submission.completed_at).toLocaleString();
+                
+                let details = '';
+                if (submission.media_url) {
+                    if (submission.media_url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                        details += `<img src="${submission.media_url}" class="w-full h-48 object-cover rounded-lg mb-3">`;
+                    } else if (submission.media_url.match(/\.(mp4|webm|ogg)$/i)) {
+                        details += `<video controls class="w-full h-48 rounded-lg mb-3"><source src="${submission.media_url}"></video>`;
                     }
-                });
+                }
                 
-            } catch (error) {
-                console.error('Map initialization error:', error);
-                document.getElementById('map').innerHTML = `
-                    <div class="h-full flex items-center justify-center">
-                        <div class="text-center">
-                            <i class="fas fa-map-marked-alt text-4xl text-gray-400 mb-3"></i>
-                            <p class="text-gray-400">Interactive map loaded</p>
-                            <p class="text-sm text-gray-500">${zones.length} mission zones available</p>
-                        </div>
-                    </div>
-                `;
+                if (submission.admin_notes) {
+                    details += `<div class="bg-gray-100 p-3 rounded-lg">
+                        <div class="font-bold mb-1">Admin Notes:</div>
+                        <div>${submission.admin_notes}</div>
+                    </div>`;
+                }
+                
+                submissionDetails.innerHTML = details;
             }
         }
-
-        // ============================
-        // NAVIGATION
-        // ============================
-        function showHome() {
-            hideAllPages();
-            document.getElementById('homePage').classList.remove('hidden');
-            setActiveNav('home');
-            updateDashboard();
-        }
-
-        function showMissions() {
-            hideAllPages();
-            document.getElementById('missionsPage').classList.remove('hidden');
-            setActiveNav('missions');
-            displayAllMissions();
-        }
-
-        function showLeaderboard() {
-            hideAllPages();
-            document.getElementById('leaderboardPage').classList.remove('hidden');
-            setActiveNav('leaderboard');
-            displayLeaderboard();
-        }
-
-        function showShop() {
-            hideAllPages();
-            document.getElementById('shopPage').classList.remove('hidden');
-            setActiveNav('shop');
-            displayShopItems();
-        }
-
-        function showActivities() {
-            hideAllPages();
-            document.getElementById('activitiesPage').classList.remove('hidden');
-            setActiveNav('activities');
-            displayActivities();
-        }
-
-        function showNotifications() {
-            hideAllPages();
-            document.getElementById('notificationsPage').classList.remove('hidden');
-            setActiveNav('notifications');
-            displayNotifications();
-        }
-
-        function showProfile() {
-            document.getElementById('profileModal').classList.remove('hidden');
-        }
-
-        function closeProfile() {
-            document.getElementById('profileModal').classList.add('hidden');
-        }
-
-        function hideAllPages() {
-            const pages = ['homePage', 'missionsPage', 'leaderboardPage', 'shopPage', 'activitiesPage', 'notificationsPage'];
-            pages.forEach(page => {
-                const element = document.getElementById(page);
-                if (element) {
-                    element.classList.add('hidden');
-                }
-            });
-        }
-
-        function setActiveNav(page) {
-            currentPage = page;
+        
+        async function loadRejectionReason(missionId) {
+            const { data, error } = await supabase
+                .from('submissions')
+                .select('admin_notes')
+                .eq('mission_id', missionId)
+                .eq('user_id', currentUser.id)
+                .eq('status', 'rejected')
+                .order('created_at', { ascending: false })
+                .limit(1);
             
-            // Desktop nav
-            document.querySelectorAll('[data-page]').forEach(item => {
-                if (item.dataset.page === page) {
-                    item.classList.add('active-nav');
-                } else {
-                    item.classList.remove('active-nav');
-                }
-            });
-            
-            // Mobile nav
-            const mobileBtns = document.querySelectorAll('nav.lg\\:hidden button');
-            mobileBtns.forEach(btn => {
-                if (btn.getAttribute('data-page') === page) {
-                    btn.classList.add('text-blue-400');
-                    btn.classList.remove('text-gray-400');
-                } else {
-                    btn.classList.remove('text-blue-400');
-                    btn.classList.add('text-gray-400');
-                }
-            });
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('hidden');
-        }
-
-        // ============================
-        // DASHBOARD UPDATES
-        // ============================
-        function updateDashboard() {
-            // Update mission count
-            const activeMissionCount = userMissions.filter(um => 
-                um.status === 'unlocked' || um.status === 'pending'
-            ).length;
-            
-            document.getElementById('missionCount').textContent = activeMissionCount;
-            
-            const missionBadge = document.getElementById('missionBadge');
-            if (activeMissionCount > 0) {
-                missionBadge.textContent = activeMissionCount;
-                missionBadge.classList.remove('hidden');
-            } else {
-                missionBadge.classList.add('hidden');
+            if (!error && data[0]) {
+                rejectionReason.textContent = data[0].admin_notes || 'No reason provided';
             }
-            
-            // Update zone count
-            document.getElementById('zoneCount').textContent = zones.length;
-            
-            // Display active missions
-            displayActiveMissions();
         }
-
-        function displayActiveMissions() {
-            const list = document.getElementById('activeMissionsList');
-            if (!list) return;
+        
+        function handleMediaUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
             
-            const activeMissions = userMissions
-                .filter(um => um.status === 'unlocked' || um.status === 'pending')
-                .slice(0, 3);
+            // Reset previews
+            imagePreview.classList.add('hidden');
+            videoPreview.classList.add('hidden');
             
-            if (activeMissions.length === 0) {
-                list.innerHTML = `
-                    <div class="glass-card p-6 text-center">
-                        <i class="fas fa-flag text-3xl text-gray-400 mb-3"></i>
-                        <p class="text-gray-400">No active missions yet</p>
-                        <button onclick="showMissions()" class="secondary-btn px-4 py-2 mt-3 text-sm">
-                            Check Missions
-                        </button>
-                    </div>
-                `;
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type.startsWith('video/')) {
+                const url = URL.createObjectURL(file);
+                previewVideo.src = url;
+                videoPreview.classList.remove('hidden');
+            }
+        }
+        
+        async function handleMissionSubmit() {
+            if (!currentLocation) {
+                showToast('Error', 'Please enable GPS and try again');
                 return;
             }
             
-            list.innerHTML = activeMissions.map(userMission => {
-                const mission = userMission.missions;
-                const statusClass = userMission.status === 'completed' ? 'badge-success' : 
-                                 userMission.status === 'pending' ? 'badge-warning' : 'badge-info';
-                
-                return `
-                    <div class="glass-card p-4 cursor-pointer hover:bg-white/5 transition-colors" 
-                         onclick="openMissionModal('${mission.id}')">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <h4 class="font-semibold">${mission.title}</h4>
-                                    <span class="badge ${statusClass}">
-                                        ${userMission.status}
-                                    </span>
-                                </div>
-                                <p class="text-sm text-gray-300 line-clamp-2">${mission.description}</p>
-                                <div class="flex items-center gap-2 mt-3">
-                                    <span class="text-xs bg-white/10 px-2 py-1 rounded-full">
-                                        <i class="fas fa-coins mr-1 text-yellow-400"></i>${mission.points}
-                                    </span>
-                                    ${mission.zones ? 
-                                        `<span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
-                                            ${mission.zones.name}
-                                        </span>` : ''}
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400 mt-1"></i>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // ============================
-        // MISSIONS DISPLAY
-        // ============================
-        function displayAllMissions() {
-            const list = document.getElementById('missionsList');
-            if (!list) return;
-            
-            if (userMissions.length === 0) {
-                list.innerHTML = `
-                    <div class="glass-card p-8 text-center">
-                        <i class="fas fa-flag text-4xl text-gray-400 mb-4"></i>
-                        <h3 class="font-bold mb-2">No Missions Available</h3>
-                        <p class="text-gray-400">Check back later for new missions!</p>
-                        <button onclick="showHome()" class="secondary-btn px-4 py-2 mt-4">
-                            Return to Home
-                        </button>
-                    </div>
-                `;
+            const file = missionMedia.files[0];
+            if (!file) {
+                showToast('Error', 'Please upload photo or video proof');
                 return;
             }
             
-            list.innerHTML = userMissions.map(userMission => {
-                const mission = userMission.missions;
-                const statusClass = userMission.status === 'completed' ? 'badge-success' : 
-                                 userMission.status === 'pending' ? 'badge-warning' : 'badge-info';
-                
-                return `
-                    <div class="glass-card p-4 cursor-pointer hover:bg-white/5 transition-colors" 
-                         onclick="openMissionModal('${mission.id}')">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <h4 class="font-semibold">${mission.title}</h4>
-                                    <span class="badge ${statusClass}">
-                                        ${userMission.status}
-                                    </span>
-                                </div>
-                                <p class="text-sm text-gray-300">${mission.description}</p>
-                                <div class="flex items-center gap-2 mt-3">
-                                    <span class="text-xs bg-white/10 px-2 py-1 rounded-full">
-                                        <i class="fas fa-coins mr-1 text-yellow-400"></i>${mission.points}
-                                    </span>
-                                    ${mission.zones ? 
-                                        `<span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
-                                            ${mission.zones.name}
-                                        </span>` : ''}
-                                    <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full">
-                                        ${mission.mission_type}
-                                    </span>
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400 mt-1"></i>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function openMissionModal(missionId) {
-            try {
-                // Find the user mission
-                const userMission = userMissions.find(um => um.mission_id === missionId);
-                if (!userMission) return;
-                
-                const mission = userMission.missions;
-                currentMission = mission;
-                
-                document.getElementById('modalMissionTitle').textContent = mission.title;
-                document.getElementById('modalMissionContent').innerHTML = `
-                    <div class="space-y-4">
-                        <div>
-                            <h4 class="font-semibold mb-2">Description</h4>
-                            <p class="text-gray-300">${mission.description}</p>
-                        </div>
-                        
-                        ${mission.instructions ? `
-                            <div class="glass-card rounded-xl p-4">
-                                <h4 class="font-semibold mb-2">Instructions</h4>
-                                <p class="text-gray-300">${mission.instructions}</p>
-                            </div>
-                        ` : ''}
-                        
-                        <div class="glass-card rounded-xl p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="text-gray-300">Mission Reward:</span>
-                                <span class="font-bold text-lg flex items-center gap-2">
-                                    <i class="fas fa-coins text-yellow-400"></i>
-                                    ${mission.points}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-gray-300">Status:</span>
-                                <span class="font-medium ${userMission.status === 'completed' ? 'text-green-400' : userMission.status === 'pending' ? 'text-yellow-400' : 'text-blue-400'}">
-                                    ${userMission.status === 'completed' ? 'Completed ✓' : userMission.status === 'pending' ? 'Pending Review ⏳' : 'Ready to Submit'}
-                                </span>
-                            </div>
-                            ${mission.zones ? `
-                                <div class="flex items-center justify-between mt-3">
-                                    <span class="text-gray-300">Zone:</span>
-                                    <span class="font-medium">${mission.zones.name}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-                
-                const submitBtn = document.getElementById('submitMissionBtn');
-                if (userMission.status === 'completed' || userMission.status === 'pending') {
-                    submitBtn.disabled = true;
-                    submitBtn.classList.remove('primary-btn');
-                    submitBtn.classList.add('secondary-btn');
-                    submitBtn.innerHTML = userMission.status === 'completed' 
-                        ? '<i class="fas fa-check mr-2"></i>Mission Completed'
-                        : '<i class="fas fa-clock mr-2"></i>Pending Review';
-                } else {
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('secondary-btn');
-                    submitBtn.classList.add('primary-btn');
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Submit Mission';
-                }
-                
-                document.getElementById('missionModal').classList.remove('hidden');
-                
-            } catch (error) {
-                console.error('Error opening mission modal:', error);
-                showToast('Error loading mission details', 'error');
-            }
-        }
-
-        function closeMissionModal() {
-            document.getElementById('missionModal').classList.add('hidden');
-            document.getElementById('mediaInput').value = '';
-            document.getElementById('mediaPreview').innerHTML = '';
-            currentMission = null;
-        }
-
-        async function submitMission() {
-            if (!currentMission || !userProfile) {
-                showToast('Please select a mission', 'warning');
-                return;
-            }
-            
-            const mediaInput = document.getElementById('mediaInput');
-            if (!mediaInput.files[0]) {
-                showToast('Please upload a photo or video', 'warning');
-                return;
-            }
-            
-            const submitBtn = document.getElementById('submitMissionBtn');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+            submitMission.disabled = true;
+            submitMission.textContent = 'Submitting...';
             
             try {
+                // Upload file to storage
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const filePath = `${currentUser.id}/${fileName}`;
+                
+                const { error: uploadError } = await supabase.storage
+                    .from('mission-media')
+                    .upload(filePath, file);
+                
+                if (uploadError) throw uploadError;
+                
+                // Get public URL
+                const { data: urlData } = supabase.storage
+                    .from('mission-media')
+                    .getPublicUrl(filePath);
+                
                 // Create submission record
-                const { data, error } = await supabase
+                const { error: submissionError } = await supabase
                     .from('submissions')
                     .insert({
-                        user_id: userProfile.id,
+                        user_id: currentUser.id,
                         mission_id: currentMission.id,
-                        gps_location: JSON.stringify({ lat: -22.5609, lng: 17.0832 }),
+                        media_url: urlData.publicUrl,
+                        gps_location: currentLocation,
                         status: 'pending'
-                    })
-                    .select()
-                    .single();
+                    });
                 
-                if (error) throw error;
+                if (submissionError) throw submissionError;
                 
                 // Update user mission status
-                const { error: updateError } = await supabase
+                const { error: missionError } = await supabase
                     .from('user_missions')
-                    .update({ 
-                        status: 'pending',
-                        completed_at: new Date().toISOString()
-                    })
-                    .eq('user_id', userProfile.id)
+                    .update({ status: 'pending' })
+                    .eq('user_id', currentUser.id)
                     .eq('mission_id', currentMission.id);
                 
-                if (updateError) throw updateError;
+                if (missionError) throw missionError;
                 
-                // Reload data
-                await loadUserMissions();
-                await loadSubmissions();
-                await loadNotifications();
+                showToast('Success', 'Mission submitted for verification!');
+                missionModal.classList.add('hidden');
                 
-                // Create notification
-                await supabase
-                    .from('notifications')
-                    .insert({
-                        user_id: userProfile.id,
-                        title: 'Mission Submitted',
-                        message: `Your submission for "${currentMission.title}" is pending review.`,
-                        type: 'info'
-                    });
-                
-                showToast('Mission submitted! Awaiting verification. 🎯', 'success');
-                closeMissionModal();
+                // Refresh displays
+                loadActiveMissions();
+                loadAllMissions();
                 
             } catch (error) {
-                console.error('Error submitting mission:', error);
-                showToast('Error submitting mission', 'error');
+                console.error('Submission error:', error);
+                showToast('Error', 'Failed to submit mission. Please try again.');
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
+                submitMission.disabled = false;
+                submitMission.textContent = 'Submit for Verification';
             }
         }
-
-        // ============================
-        // LEADERBOARD DISPLAY
-        // ============================
-        function displayLeaderboard() {
-            const list = document.getElementById('leaderboardList');
-            if (!list) return;
+        
+        async function loadLeaderboard() {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, name, team_name, coins')
+                .order('coins', { ascending: false })
+                .limit(20);
             
-            if (leaderboard.length === 0) {
-                list.innerHTML = `
-                    <div class="text-center py-8">
-                        <i class="fas fa-trophy text-4xl text-gray-400 mb-3"></i>
-                        <p class="text-gray-400">No leaderboard data yet</p>
-                        <p class="text-sm text-gray-500">Complete missions to earn coins!</p>
-                    </div>
-                `;
-                return;
+            if (error) return;
+            
+            leaderboardList.innerHTML = '';
+            
+            // Find user rank
+            const userIndex = data.findIndex(p => p.id === currentUser.id);
+            if (userIndex !== -1) {
+                userRank.textContent = `#${userIndex + 1}`;
+                userScore.textContent = data[userIndex].coins;
             }
             
-            list.innerHTML = leaderboard.map((user, index) => {
-                const rank = index + 1;
-                const isCurrentUser = user.id === userProfile?.id;
-                const rankColor = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-gray-400';
-                const rankIcon = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+            data.forEach((profile, index) => {
+                const isCurrentUser = profile.id === currentUser.id;
+                const bgClass = isCurrentUser ? 'bg-blue-50 border-blue-200' : 'bg-white';
                 
-                return `
-                    <div class="flex items-center gap-4 p-3 rounded-xl ${isCurrentUser ? 'bg-white/10' : ''}">
-                        <div class="w-10 h-10 rounded-xl ${rankColor} flex items-center justify-center font-bold text-lg">
-                            ${rankIcon}
-                        </div>
-                        
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2">
-                                <span class="font-semibold ${isCurrentUser ? 'text-blue-400' : ''}">
-                                    ${user.name}
-                                </span>
-                                ${isCurrentUser ? '<span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">You</span>' : ''}
-                            </div>
-                            <div class="text-sm text-gray-400">${user.team_name || 'No team'}</div>
-                        </div>
-                        
-                        <div class="text-right">
-                            <div class="font-bold flex items-center gap-1">
-                                <i class="fas fa-coins text-yellow-400"></i>
-                                ${user.coins}
-                            </div>
-                            <div class="text-xs text-gray-400">coins</div>
-                        </div>
+                const entry = document.createElement('div');
+                entry.className = `flex items-center p-3 border rounded-lg ${bgClass}`;
+                entry.innerHTML = `
+                    <div class="w-8 text-center font-bold text-gray-500">${index + 1}</div>
+                    <div class="flex-1 ml-3">
+                        <div class="font-bold">${profile.name}</div>
+                        <div class="text-sm text-gray-600">${profile.team_name || 'No team'}</div>
+                    </div>
+                    <div class="flex items-center text-yellow-600 font-bold">
+                        <i class="fas fa-coins mr-1"></i>
+                        ${profile.coins}
                     </div>
                 `;
-            }).join('');
+                leaderboardList.appendChild(entry);
+            });
         }
-
-        // ============================
-        // SHOP DISPLAY
-        // ============================
-        function displayShopItems() {
-            const container = document.getElementById('shopItems');
-            if (!container) return;
+        
+        async function loadPrizes() {
+            const { data, error } = await supabase
+                .from('prizes')
+                .select('*')
+                .eq('is_active', true)
+                .order('price');
             
-            if (prizes.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-3 text-center py-12">
-                        <i class="fas fa-gift text-4xl text-gray-400 mb-3"></i>
-                        <h3 class="font-bold mb-2">No Rewards Available</h3>
-                        <p class="text-gray-400">Check back later for new rewards!</p>
-                    </div>
-                `;
-                return;
-            }
+            if (error) return;
             
-            container.innerHTML = prizes.map(item => {
-                const canAfford = userProfile && userProfile.coins >= item.price;
-                const isOutOfStock = item.remaining_quantity <= 0;
+            prizesList.innerHTML = '';
+            
+            data.forEach(prize => {
+                const canAfford = userProfile.coins >= prize.price;
+                const hasStock = prize.remaining_quantity > 0;
                 
-                return `
-                    <div class="glass-card p-4">
-                        <div class="aspect-square rounded-xl bg-gradient-to-br from-blue-900/20 to-purple-900/20 flex items-center justify-center text-6xl mb-4">
-                            <i class="fas fa-gift text-gray-400"></i>
+                const prizeElement = document.createElement('div');
+                prizeElement.className = 'glass rounded-xl p-4';
+                prizeElement.innerHTML = `
+                    <div class="h-32 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg mb-3 flex items-center justify-center">
+                        <i class="fas fa-gift text-4xl text-purple-500"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-800 mb-1">${prize.name}</h4>
+                    <p class="text-gray-600 text-sm mb-3">${prize.description}</p>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center text-yellow-600 font-bold">
+                            <i class="fas fa-coins mr-1"></i>
+                            ${prize.price}
                         </div>
-                        
-                        <h4 class="font-semibold mb-1">${item.name}</h4>
-                        <p class="text-sm text-gray-300 line-clamp-2 mb-3">${item.description || 'No description'}</p>
-                        
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-1">
-                                <i class="fas fa-coins text-yellow-400"></i>
-                                <span class="font-bold">${item.price}</span>
-                            </div>
-                            <div class="text-xs ${item.remaining_quantity <= 3 ? 'text-orange-400' : 'text-gray-400'}">
-                                ${item.remaining_quantity} left
-                            </div>
+                        <div class="text-sm text-gray-500">
+                            ${prize.remaining_quantity} left
                         </div>
-                        
-                        <button type="button" onclick="buyItem('${item.id}')" 
-                                ${!canAfford || isOutOfStock ? 'disabled' : ''}
-                                class="w-full h-10 rounded-xl ${!canAfford || isOutOfStock ? 'secondary-btn opacity-50 cursor-not-allowed' : 'primary-btn'}">
-                            ${isOutOfStock ? 'Out of Stock' : !canAfford ? `Need ${item.price - userProfile.coins} more` : 'Buy Now'}
-                        </button>
                     </div>
+                    <button class="w-full mt-3 py-2 rounded-lg font-medium ${canAfford && hasStock ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}"
+                            data-prize-id="${prize.id}"
+                            ${!canAfford || !hasStock ? 'disabled' : ''}>
+                        ${!hasStock ? 'Sold Out' : !canAfford ? `Need ${prize.price - userProfile.coins} more` : 'Buy Now'}
+                    </button>
                 `;
-            }).join('');
+                
+                if (canAfford && hasStock) {
+                    prizeElement.querySelector('button').addEventListener('click', () => openPurchaseModal(prize));
+                }
+                
+                prizesList.appendChild(prizeElement);
+            });
         }
-
-        async function buyItem(itemId) {
-            const item = prizes.find(i => i.id === itemId);
-            if (!item || !userProfile || userProfile.coins < item.price) {
-                showToast('Insufficient coins', 'warning');
-                return;
-            }
+        
+        function openPurchaseModal(prize) {
+            currentPurchase = prize;
             
-            if (item.remaining_quantity <= 0) {
-                showToast('Item is out of stock', 'warning');
-                return;
-            }
-            
-            const confirmed = confirm(`Buy ${item.name} for ${item.price} coins?`);
-            if (!confirmed) return;
-            
-            try {
-                // Create purchase record
-                const { data: purchase, error: purchaseError } = await supabase
-                    .from('purchases')
-                    .insert({
-                        user_id: userProfile.id,
-                        prize_id: item.id,
-                        quantity: 1,
-                        total_price: item.price,
-                        status: 'completed'
-                    })
-                    .select()
-                    .single();
-                
-                if (purchaseError) throw purchaseError;
-                
-                // Update prize quantity
-                const { error: updateError } = await supabase
-                    .from('prizes')
-                    .update({ 
-                        remaining_quantity: item.remaining_quantity - 1 
-                    })
-                    .eq('id', item.id);
-                
-                if (updateError) throw updateError;
-                
-                // Update user coins
-                const { error: userError } = await supabase
-                    .from('profiles')
-                    .update({ 
-                        coins: userProfile.coins - item.price 
-                    })
-                    .eq('id', userProfile.id);
-                
-                if (userError) throw userError;
-                
-                // Update local state
-                userProfile.coins -= item.price;
-                item.remaining_quantity--;
-                
-                // Update UI
-                updateUI();
-                displayShopItems();
-                
-                // Create notification
-                await supabase
-                    .from('notifications')
-                    .insert({
-                        user_id: userProfile.id,
-                        title: 'Purchase Successful',
-                        message: `You bought ${item.name} for ${item.price} coins`,
-                        type: 'success'
-                    });
-                
-                showToast(`Purchased ${item.name}! 🎁`, 'success');
-                
-            } catch (error) {
-                console.error('Error purchasing item:', error);
-                showToast('Error purchasing item', 'error');
-            }
-        }
-
-        // ============================
-        // ACTIVITIES DISPLAY
-        // ============================
-        function displayActivities() {
-            const list = document.getElementById('activitiesList');
-            if (!list) return;
-            
-            if (submissions.length === 0) {
-                list.innerHTML = `
-                    <div class="glass-card p-8 text-center">
-                        <i class="fas fa-history text-4xl text-gray-400 mb-4"></i>
-                        <h3 class="font-bold mb-2">No Activities Yet</h3>
-                        <p class="text-gray-400">Complete missions to see your activities here!</p>
-                        <button onclick="showMissions()" class="secondary-btn px-4 py-2 mt-4">
-                            Start a Mission
-                        </button>
+            purchaseDetails.innerHTML = `
+                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <div class="flex items-center mb-3">
+                        <div class="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-gift text-xl text-purple-500"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold">${prize.name}</div>
+                            <div class="text-sm text-gray-600">${prize.description}</div>
+                        </div>
                     </div>
-                `;
-                return;
-            }
-            
-            list.innerHTML = submissions.map(submission => {
-                const statusColor = submission.status === 'approved' ? 'text-green-400' : 
-                                  submission.status === 'rejected' ? 'text-red-400' : 'text-yellow-400';
-                const missionTitle = submission.missions?.title || 'Unknown Mission';
-                
-                return `
-                    <div class="glass-card p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <h4 class="font-semibold">${missionTitle}</h4>
-                                <p class="text-sm text-gray-400 mt-1">
-                                    Submitted ${formatTimeAgo(submission.created_at)}
-                                </p>
-                                ${submission.admin_notes ? `
-                                    <div class="mt-2 p-2 bg-white/5 rounded-lg">
-                                        <p class="text-sm text-gray-300">${submission.admin_notes}</p>
-                                    </div>
-                                ` : ''}
-                            </div>
-                            <span class="text-sm ${statusColor}">
-                                ${submission.status}
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span>Price:</span>
+                            <span class="font-bold text-yellow-600">${prize.price} coins</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Your balance:</span>
+                            <span class="font-bold">${userProfile.coins} coins</span>
+                        </div>
+                        <div class="flex justify-between border-t pt-2">
+                            <span>Remaining after purchase:</span>
+                            <span class="font-bold ${userProfile.coins - prize.price < 0 ? 'text-red-600' : 'text-green-600'}">
+                                ${userProfile.coins - prize.price} coins
                             </span>
                         </div>
                     </div>
-                `;
-            }).join('');
-        }
-
-        // ============================
-        // NOTIFICATIONS DISPLAY
-        // ============================
-        function displayNotifications() {
-            const list = document.getElementById('notificationsList');
-            if (!list) return;
+                </div>
+            `;
             
-            if (notifications.length === 0) {
-                list.innerHTML = `
-                    <div class="glass-card p-8 text-center">
-                        <i class="fas fa-bell-slash text-4xl text-gray-400 mb-4"></i>
-                        <h3 class="font-bold mb-2">No Notifications</h3>
-                        <p class="text-gray-400">You're all caught up!</p>
-                    </div>
-                `;
+            purchaseModal.classList.remove('hidden');
+        }
+        
+        async function handlePurchase() {
+            if (!currentPurchase) return;
+            
+            if (userProfile.coins < currentPurchase.price) {
+                showToast('Error', 'Not enough coins');
+                purchaseModal.classList.add('hidden');
                 return;
             }
             
-            list.innerHTML = notifications.map(notif => {
-                const icon = {
-                    'info': 'fas fa-info-circle text-blue-400',
-                    'success': 'fas fa-check-circle text-green-400',
-                    'warning': 'fas fa-exclamation-triangle text-yellow-400',
-                    'error': 'fas fa-times-circle text-red-400'
-                }[notif.type] || 'fas fa-info-circle text-blue-400';
-                
-                return `
-                    <div class="glass-card p-4 ${notif.is_read ? '' : 'border-l-4 border-blue-500'}">
-                        <div class="flex items-start gap-3">
-                            <i class="${icon} mt-1 text-lg"></i>
-                            <div class="flex-1">
-                                <h4 class="font-semibold mb-1">${notif.title}</h4>
-                                <p class="text-sm text-gray-300">${notif.message}</p>
-                                <div class="text-xs text-gray-400 mt-2">
-                                    ${formatTimeAgo(notif.created_at)}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function markAllAsRead() {
-            try {
-                const unreadIds = notifications
-                    .filter(n => !n.is_read)
-                    .map(n => n.id);
-                
-                if (unreadIds.length === 0) {
-                    showToast('No unread notifications', 'info');
-                    return;
-                }
-                
-                const { error } = await supabase
-                    .from('notifications')
-                    .update({ is_read: true })
-                    .in('id', unreadIds);
-                
-                if (error) throw error;
-                
-                // Update local state
-                notifications.forEach(n => n.is_read = true);
-                updateNotificationDot();
-                
-                displayNotifications();
-                showToast('All notifications marked as read', 'success');
-                
-            } catch (error) {
-                console.error('Error marking notifications as read:', error);
-                showToast('Error updating notifications', 'error');
+            // Start transaction
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ coins: userProfile.coins - currentPurchase.price })
+                .eq('id', currentUser.id);
+            
+            if (updateError) {
+                showToast('Error', 'Purchase failed. Please try again.');
+                return;
             }
-        }
-
-        function updateNotificationDot() {
-            const unreadCount = notifications.filter(n => !n.is_read).length;
-            const desktopDot = document.getElementById('notificationDot');
-            const mobileDot = document.getElementById('mobileNotificationDot');
             
-            if (unreadCount > 0) {
-                desktopDot.classList.remove('hidden');
-                mobileDot.classList.remove('hidden');
-            } else {
-                desktopDot.classList.add('hidden');
-                mobileDot.classList.add('hidden');
-            }
-        }
-
-        // ============================
-        // SOS FUNCTION
-        // ============================
-        async function triggerSOS() {
-            const confirmed = confirm(
-                '🚨 EMERGENCY SOS\n\n' +
-                'This will alert event organizers and emergency services.\n\n' +
-                'Continue?'
-            );
+            // Update prize quantity
+            const { error: prizeError } = await supabase
+                .from('prizes')
+                .update({ 
+                    remaining_quantity: currentPurchase.remaining_quantity - 1 
+                })
+                .eq('id', currentPurchase.id);
             
-            if (!confirmed) return;
-            
-            try {
+            if (prizeError) {
+                // Rollback coins update
                 await supabase
+                    .from('profiles')
+                    .update({ coins: userProfile.coins })
+                    .eq('id', currentUser.id);
+                
+                showToast('Error', 'Purchase failed. Please try again.');
+                return;
+            }
+            
+            // Update local state
+            userProfile.coins -= currentPurchase.price;
+            updateUserUI();
+            
+            showToast('Success', `Purchased ${currentPurchase.name}!`);
+            purchaseModal.classList.add('hidden');
+            
+            // Refresh shop
+            loadPrizes();
+        }
+        
+        async function sendSOSAlert() {
+            if (!currentLocation) {
+                showToast('Error', 'Cannot send SOS without location');
+                sosModal.classList.add('hidden');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase
                     .from('sos_alerts')
                     .insert({
-                        user_id: userProfile.id,
-                        location: JSON.stringify({ lat: -22.5609, lng: 17.0832 }),
-                        message: 'Emergency SOS activated by user',
+                        user_id: currentUser.id,
+                        location: currentLocation,
+                        message: 'Emergency assistance requested',
                         status: 'active'
                     });
                 
-                // Create notification
-                await supabase
-                    .from('notifications')
-                    .insert({
-                        user_id: userProfile.id,
-                        title: 'SOS Alert Sent',
-                        message: 'Emergency services have been alerted. Help is on the way.',
-                        type: 'warning'
-                    });
+                if (error) throw error;
                 
-                await loadNotifications();
+                showToast('Emergency Alert Sent', 'Help is on the way!');
+                sosModal.classList.add('hidden');
                 
-                showToast('🚨 SOS Alert Sent! Help is on the way.', 'success');
-                
+                // Show emergency contacts
                 setTimeout(() => {
-                    const call = confirm('Call Namibia Emergency: +264 81 111 1111?');
-                    if (call) {
-                        window.open('tel:+26481111111', '_blank');
-                    }
+                    alert('Emergency alert sent! Please call:\n\nPolice: 10111\nAmbulance: 081 924\nGame Admin: +264 81 123 4567');
                 }, 1000);
                 
             } catch (error) {
-                console.error('Error sending SOS:', error);
-                showToast('Error sending SOS alert', 'error');
+                console.error('SOS Error:', error);
+                showToast('Error', 'Failed to send SOS. Please try again or call emergency services directly.');
             }
         }
-
-        // ============================
-        // LOGOUT
-        // ============================
-        async function handleLogout() {
-            try {
-                await supabase.auth.signOut();
-                currentUser = null;
-                userProfile = null;
-                
-                // Clear timer
-                if (eventTimerInterval) {
-                    clearInterval(eventTimerInterval);
-                }
-                
-                // Reset to auth screen
-                document.getElementById('mainApp').classList.add('hidden');
-                document.getElementById('authScreen').classList.remove('hidden');
-                document.getElementById('loginForm').classList.remove('hidden');
-                document.getElementById('signupForm').classList.add('hidden');
-                
-                // Clear forms
-                document.getElementById('loginEmail').value = 'player@example.com';
-                document.getElementById('loginPassword').value = 'password123';
-                document.getElementById('signupName').value = '';
-                document.getElementById('signupEmail').value = '';
-                document.getElementById('signupPassword').value = '';
-                document.getElementById('signupTeam').value = '';
-                
-                showToast('Logged out successfully', 'info');
-                
-            } catch (error) {
-                console.error('Error logging out:', error);
-                showToast('Error logging out', 'error');
-            }
-        }
-
-        // ============================
-        // UTILITY FUNCTIONS
-        // ============================
-        function formatTimeAgo(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffMs = now - date;
-            const diffMin = Math.floor(diffMs / (1000 * 60));
-            const diffHour = Math.floor(diffMin / 60);
-            const diffDay = Math.floor(diffHour / 24);
-            
-            if (diffDay > 0) return `${diffDay}d ago`;
-            if (diffHour > 0) return `${diffHour}h ago`;
-            if (diffMin > 0) return `${diffMin}m ago`;
-            return 'just now';
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-            
-            const colors = {
-                success: 'bg-green-500',
-                error: 'bg-red-500',
-                warning: 'bg-yellow-500',
-                info: 'bg-blue-500'
-            };
-            
-            const icons = {
-                success: 'fas fa-check-circle',
-                error: 'fas fa-exclamation-circle',
-                warning: 'fas fa-exclamation-triangle',
-                info: 'fas fa-info-circle'
-            };
-            
-            const toast = document.createElement('div');
-            toast.className = `${colors[type]} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 fade-in`;
-            toast.innerHTML = `
-                <i class="${icons[type]}"></i>
-                <span class="flex-1">${message}</span>
-                <button type="button" onclick="this.parentElement.remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
-        }
-
-        function setupMediaPreview() {
-            const mediaInput = document.getElementById('mediaInput');
-            if (!mediaInput) return;
-            
-            mediaInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                const preview = document.getElementById('mediaPreview');
-                
-                if (!file) return;
-                
-                preview.innerHTML = '';
-                
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.innerHTML = `
-                            <div class="relative">
-                                <img src="${e.target.result}" alt="Preview" class="w-full h-48 object-cover rounded-lg">
-                                <span class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                                    <i class="fas fa-image mr-1"></i>Image
-                                </span>
-                            </div>
-                        `;
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file.type.startsWith('video/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.innerHTML = `
-                            <div class="relative">
-                                <video src="${e.target.result}" controls class="w-full h-48 object-cover rounded-lg"></video>
-                                <span class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                                    <i class="fas fa-video mr-1"></i>Video
-                                </span>
-                            </div>
-                        `;
-                    };
-                    reader.readAsDataURL(file);
+        
+        function switchPage(page) {
+            // Update navigation
+            navBtns.forEach(btn => {
+                if (btn.dataset.page === page) {
+                    btn.classList.remove('text-gray-500');
+                    btn.classList.add('text-blue-500');
+                } else {
+                    btn.classList.add('text-gray-500');
+                    btn.classList.remove('text-blue-500');
                 }
             });
+            
+            // Show selected page
+            pages.forEach(p => {
+                if (p.id === `${page}Page`) {
+                    p.classList.remove('hidden');
+                } else {
+                    p.classList.add('hidden');
+                }
+            });
+            
+            // Refresh page data
+            switch(page) {
+                case 'home':
+                    loadActiveMissions();
+                    break;
+                case 'missions':
+                    loadAllMissions();
+                    break;
+                case 'leaderboard':
+                    loadLeaderboard();
+                    break;
+                case 'shop':
+                    loadPrizes();
+                    break;
+            }
         }
+        
+        function setupRealtime() {
+            // Listen for zone updates
+            realtimeChannel = supabase
+                .channel('game-updates')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'zones' },
+                    (payload) => {
+                        console.log('Zone update:', payload);
+                        loadZones();
+                    }
+                )
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'user_missions', filter: `user_id=eq.${currentUser.id}` },
+                    (payload) => {
+                        console.log('Mission update:', payload);
+                        loadActiveMissions();
+                        loadAllMissions();
+                        loadCompletedMissionsCount();
+                    }
+                )
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'submissions', filter: `user_id=eq.${currentUser.id}` },
+                    (payload) => {
+                        console.log('Submission update:', payload);
+                        if (payload.new.status === 'approved') {
+                            showToast('Mission Approved!', `You earned ${currentMission?.points || 0} coins!`);
+                            loadUserProfile();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+        
+        function showToast(title, message, type = 'info') {
+            const icons = {
+                'info': 'fa-info-circle',
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-circle',
+                'warning': 'fa-exclamation-triangle'
+            };
+            
+            toastIcon.className = `fas ${icons[type]} mr-3`;
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            
+            toast.classList.remove('translate-y-[-100px]');
+            toast.classList.add('translate-y-0');
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0');
+                toast.classList.add('translate-y-[-100px]');
+            }, 3000);
+        }
+        
+        async function handleLogout() {
+            await supabase.auth.signOut();
+            location.reload();
+        }
+        
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+            if (realtimeChannel) {
+                supabase.removeChannel(realtimeChannel);
+            }
+        });
     </script>
 </body>
 </html>
