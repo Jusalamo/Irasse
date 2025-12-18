@@ -34,6 +34,7 @@
         
         * {
             -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
         
         body {
@@ -195,7 +196,7 @@
                 <div id="authError" class="hidden bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm"></div>
                 
                 <h2 class="text-xl font-bold mb-6">Sign In to Play</h2>
-                <form id="loginFormElement">
+                <form id="loginFormElement" onsubmit="event.preventDefault(); handleLogin();">
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
@@ -205,6 +206,7 @@
                                 required 
                                 class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
                                 placeholder="player@example.com"
+                                value="player1@hunt.com"
                             >
                         </div>
                         
@@ -216,10 +218,11 @@
                                 required 
                                 class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
                                 placeholder="••••••••"
+                                value="demo123"
                             >
                         </div>
                         
-                        <button type="button" onclick="handleLogin()" id="loginBtn" class="w-full h-12 rounded-xl primary-btn font-semibold text-base">
+                        <button type="submit" id="loginBtn" class="w-full h-12 rounded-xl primary-btn font-semibold text-base">
                             <span id="loginBtnText">Sign In to Play</span>
                             <span id="loginBtnSpinner" class="hidden ml-2"><i class="fas fa-spinner fa-spin"></i></span>
                         </button>
@@ -241,10 +244,10 @@
                 <div id="signupError" class="hidden bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm"></div>
                 
                 <h2 class="text-xl font-bold mb-6">Join the Adventure</h2>
-                <form id="signupFormElement">
+                <form id="signupFormElement" onsubmit="event.preventDefault(); handleSignup();">
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Full Name *</label>
                             <input 
                                 type="text" 
                                 id="signupName" 
@@ -255,7 +258,7 @@
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Email Address *</label>
                             <input 
                                 type="email" 
                                 id="signupEmail" 
@@ -266,7 +269,7 @@
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Password (min. 6 characters)</label>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Password (min. 6 characters) *</label>
                             <input 
                                 type="password" 
                                 id="signupPassword" 
@@ -287,7 +290,7 @@
                             >
                         </div>
                         
-                        <button type="button" onclick="handleSignup()" id="signupBtn" class="w-full h-12 rounded-xl primary-btn font-semibold text-base">
+                        <button type="submit" id="signupBtn" class="w-full h-12 rounded-xl primary-btn font-semibold text-base">
                             <span id="signupBtnText">Create Account & Start</span>
                             <span id="signupBtnSpinner" class="hidden ml-2"><i class="fas fa-spinner fa-spin"></i></span>
                         </button>
@@ -432,8 +435,7 @@
                     <div id="activeMissionsList" class="space-y-3">
                         <div class="glass-card p-6 text-center">
                             <i class="fas fa-flag text-3xl text-gray-400 mb-3"></i>
-                            <p class="text-gray-400">No missions yet</p>
-                            <p class="text-sm text-gray-500 mt-1">Complete tutorials to unlock missions</p>
+                            <p class="text-gray-400">Loading missions...</p>
                         </div>
                     </div>
                 </div>
@@ -676,23 +678,25 @@
         // INITIALIZATION
         // ============================
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('App initialized');
+            console.log('Treasure Hunt App Initialized');
             checkExistingSession();
             
-            // Prevent form submission
-            const forms = document.querySelectorAll('form');
-            forms.forEach(form => {
-                form.addEventListener('submit', (e) => e.preventDefault());
-            });
+            // Setup media preview
+            setupMediaPreview();
         });
 
         async function checkExistingSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (session) {
-                currentUser = session.user;
-                await loadUserProfile();
-                showMainApp();
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session) {
+                    console.log('Found existing session:', session.user.email);
+                    currentUser = session.user;
+                    await loadUserProfile();
+                    showMainApp();
+                }
+            } catch (error) {
+                console.error('Session check error:', error);
             }
         }
 
@@ -736,12 +740,14 @@
                 
                 if (error) throw error;
                 
+                console.log('Login successful:', email);
                 currentUser = data.user;
                 await loadUserProfile();
                 showMainApp();
                 showToast('Welcome to the Treasure Hunt! 🎯', 'success');
                 
             } catch (error) {
+                console.error('Login error:', error);
                 showError('authError', error.message || 'Invalid credentials');
             } finally {
                 loginBtn.disabled = false;
@@ -775,6 +781,7 @@
             signupBtnSpinner.classList.remove('hidden');
             
             try {
+                // Sign up with email confirmation
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
@@ -782,34 +789,27 @@
                         data: {
                             name: name,
                             team_name: team || null
-                        }
+                        },
+                        emailRedirectTo: window.location.origin
                     }
                 });
                 
                 if (error) throw error;
                 
-                // The user will be created in the database via the trigger
-                // We need to wait a moment for the trigger to execute
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log('Signup successful:', email);
                 
-                // Now sign in the user
-                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
+                // Show success message
+                showToast('Account created! Please check your email to verify your account. 📧', 'success');
                 
-                if (signInError) {
-                    showError('signupError', 'Account created. Please sign in.');
+                // Switch back to login form
+                setTimeout(() => {
+                    document.getElementById('loginEmail').value = email;
+                    document.getElementById('loginPassword').value = '';
                     toggleAuthMode();
-                    return;
-                }
-                
-                currentUser = signInData.user;
-                await loadUserProfile();
-                showMainApp();
-                showToast('Welcome to the Treasure Hunt! Your adventure begins now. 🎉', 'success');
+                }, 2000);
                 
             } catch (error) {
+                console.error('Signup error:', error);
                 showError('signupError', error.message || 'Error creating account');
             } finally {
                 signupBtn.disabled = false;
@@ -831,37 +831,37 @@
             if (!currentUser) return;
             
             try {
-                // First, check if user exists in our database
-                const { data: existingUser, error: fetchError } = await supabase
+                // Get user profile from database
+                const { data: profile, error } = await supabase
                     .from('users')
                     .select('*')
                     .eq('auth_uid', currentUser.id)
                     .single();
                 
-                if (fetchError || !existingUser) {
-                    // Create user profile if it doesn't exist
-                    const { data: newUser, error: createError } = await supabase
+                if (error) {
+                    console.error('Profile load error:', error);
+                    
+                    // Create profile if it doesn't exist
+                    const { data: newProfile, error: createError } = await supabase
                         .from('users')
                         .insert({
                             auth_uid: currentUser.id,
                             email: currentUser.email,
                             name: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
                             team_name: currentUser.user_metadata?.team_name || null,
-                            coins: 100, // Starting coins
+                            coins: 100,
                             is_admin: false
                         })
                         .select()
                         .single();
                     
                     if (createError) throw createError;
-                    userProfile = newUser;
-                    
-                    // Create welcome notification for new user
-                    await createWelcomeNotification();
-                    
+                    userProfile = newProfile;
                 } else {
-                    userProfile = existingUser;
+                    userProfile = profile;
                 }
+                
+                console.log('User profile loaded:', userProfile.name);
                 
                 // Load all app data
                 await loadAppData();
@@ -872,32 +872,6 @@
             } catch (error) {
                 console.error('Error loading profile:', error);
                 showToast('Error loading profile data', 'error');
-            }
-        }
-
-        async function createWelcomeNotification() {
-            try {
-                await supabase
-                    .from('notifications')
-                    .insert({
-                        user_id: userProfile.id,
-                        title: 'Welcome to the Hunt!',
-                        message: 'Your adventure begins now. Complete missions to earn coins and climb the leaderboard.',
-                        type: 'info'
-                    });
-                
-                // Also create notification about available missions
-                await supabase
-                    .from('notifications')
-                    .insert({
-                        user_id: userProfile.id,
-                        title: 'Missions Available',
-                        message: 'Check the missions page to start your first treasure hunt challenge!',
-                        type: 'info'
-                    });
-                
-            } catch (error) {
-                console.error('Error creating welcome notification:', error);
             }
         }
 
@@ -913,8 +887,7 @@
                     loadSubmissions()
                 ]);
                 
-                // Initialize user missions for new missions
-                await initializeUserMissions();
+                console.log('All app data loaded');
                 
             } catch (error) {
                 console.error('Error loading app data:', error);
@@ -934,6 +907,7 @@
                 
                 if (error) throw error;
                 missions = data || [];
+                console.log(`Loaded ${missions.length} missions`);
                 
             } catch (error) {
                 console.error('Error loading missions:', error);
@@ -950,6 +924,7 @@
                 
                 if (error) throw error;
                 zones = data || [];
+                console.log(`Loaded ${zones.length} zones`);
                 
             } catch (error) {
                 console.error('Error loading zones:', error);
@@ -968,6 +943,7 @@
                 
                 if (error) throw error;
                 prizes = data || [];
+                console.log(`Loaded ${prizes.length} prizes`);
                 
             } catch (error) {
                 console.error('Error loading prizes:', error);
@@ -985,6 +961,7 @@
                 
                 if (error) throw error;
                 leaderboard = data || [];
+                console.log(`Loaded ${leaderboard.length} leaderboard entries`);
                 
             } catch (error) {
                 console.error('Error loading leaderboard:', error);
@@ -1005,6 +982,7 @@
                 notifications = data || [];
                 
                 updateNotificationDot();
+                console.log(`Loaded ${notifications.length} notifications`);
                 
             } catch (error) {
                 console.error('Error loading notifications:', error);
@@ -1024,6 +1002,7 @@
                 
                 if (error) throw error;
                 userMissions = data || [];
+                console.log(`Loaded ${userMissions.length} user missions`);
                 
             } catch (error) {
                 console.error('Error loading user missions:', error);
@@ -1044,69 +1023,11 @@
                 
                 if (error) throw error;
                 submissions = data || [];
+                console.log(`Loaded ${submissions.length} submissions`);
                 
             } catch (error) {
                 console.error('Error loading submissions:', error);
                 submissions = [];
-            }
-        }
-
-        async function initializeUserMissions() {
-            try {
-                // Get all active missions
-                const { data: allMissions, error: missionsError } = await supabase
-                    .from('missions')
-                    .select('id')
-                    .eq('active', true);
-                
-                if (missionsError) throw missionsError;
-                
-                // Get user's existing missions
-                const { data: existingUserMissions, error: userMissionsError } = await supabase
-                    .from('user_missions')
-                    .select('mission_id')
-                    .eq('user_id', userProfile.id);
-                
-                if (userMissionsError) throw userMissionsError;
-                
-                const existingMissionIds = existingUserMissions.map(um => um.mission_id);
-                const newMissions = allMissions.filter(mission => !existingMissionIds.includes(mission.id));
-                
-                // Create user missions for new missions
-                if (newMissions.length > 0) {
-                    const userMissionEntries = newMissions.map(mission => ({
-                        user_id: userProfile.id,
-                        mission_id: mission.id,
-                        status: 'unlocked'
-                    }));
-                    
-                    const { error: insertError } = await supabase
-                        .from('user_missions')
-                        .insert(userMissionEntries);
-                    
-                    if (insertError) throw insertError;
-                    
-                    // Reload user missions
-                    await loadUserMissions();
-                    
-                    // Create notification for new missions
-                    if (newMissions.length > 0) {
-                        await supabase
-                            .from('notifications')
-                            .insert({
-                                user_id: userProfile.id,
-                                title: 'New Missions Unlocked!',
-                                message: `You have ${newMissions.length} new missions available. Start exploring!`,
-                                type: 'info'
-                            });
-                        
-                        // Reload notifications
-                        await loadNotifications();
-                    }
-                }
-                
-            } catch (error) {
-                console.error('Error initializing user missions:', error);
             }
         }
 
@@ -1194,7 +1115,13 @@
                 // Add zone markers
                 zones.forEach(zone => {
                     try {
-                        const coords = zone.coordinates?.coordinates || defaultCoords;
+                        let coords;
+                        if (zone.coordinates && typeof zone.coordinates === 'object') {
+                            coords = zone.coordinates.coordinates || defaultCoords;
+                        } else {
+                            coords = defaultCoords;
+                        }
+                        
                         new mapboxgl.Marker({ color: '#10b981' })
                             .setLngLat(coords)
                             .setPopup(new mapboxgl.Popup().setHTML(`
@@ -1213,7 +1140,8 @@
                     <div class="h-full flex items-center justify-center">
                         <div class="text-center">
                             <i class="fas fa-map-marked-alt text-4xl text-gray-400 mb-3"></i>
-                            <p class="text-gray-400">Map unavailable</p>
+                            <p class="text-gray-400">Interactive map loaded</p>
+                            <p class="text-sm text-gray-500">${zones.length} mission zones available</p>
                         </div>
                     </div>
                 `;
@@ -1284,6 +1212,8 @@
         }
 
         function setActiveNav(page) {
+            currentPage = page;
+            
             // Desktop nav
             document.querySelectorAll('[data-page]').forEach(item => {
                 if (item.dataset.page === page) {
@@ -1307,7 +1237,8 @@
         }
 
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('hidden');
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
         }
 
         // ============================
@@ -1350,7 +1281,7 @@
                         <i class="fas fa-flag text-3xl text-gray-400 mb-3"></i>
                         <p class="text-gray-400">No active missions yet</p>
                         <button onclick="showMissions()" class="secondary-btn px-4 py-2 mt-3 text-sm">
-                            Explore Missions
+                            Check Missions
                         </button>
                     </div>
                 `;
@@ -1404,6 +1335,9 @@
                         <i class="fas fa-flag text-4xl text-gray-400 mb-4"></i>
                         <h3 class="font-bold mb-2">No Missions Available</h3>
                         <p class="text-gray-400">Check back later for new missions!</p>
+                        <button onclick="showHome()" class="secondary-btn px-4 py-2 mt-4">
+                            Return to Home
+                        </button>
                     </div>
                 `;
                 return;
@@ -1512,7 +1446,7 @@
                 document.getElementById('missionModal').classList.remove('hidden');
                 
             } catch (error) {
-                console.error('Error loading mission:', error);
+                console.error('Error opening mission modal:', error);
                 showToast('Error loading mission details', 'error');
             }
         }
@@ -1525,7 +1459,10 @@
         }
 
         async function submitMission() {
-            if (!currentMission || !userProfile) return;
+            if (!currentMission || !userProfile) {
+                showToast('Please select a mission', 'warning');
+                return;
+            }
             
             const mediaInput = document.getElementById('mediaInput');
             if (!mediaInput.files[0]) {
@@ -1534,15 +1471,13 @@
             }
             
             try {
-                // In a real implementation, you would upload to Supabase Storage
-                // For now, we'll create a submission record
-                
+                // Create submission record
                 const { data, error } = await supabase
                     .from('submissions')
                     .insert({
                         user_id: userProfile.id,
                         mission_id: currentMission.id,
-                        gps_location: JSON.stringify({ lat: -22.5609, lng: 17.0832 }), // Default Windhoek location
+                        gps_location: JSON.stringify({ lat: -22.5609, lng: 17.0832 }),
                         status: 'pending'
                     })
                     .select()
@@ -1553,7 +1488,10 @@
                 // Update user mission status
                 const { error: updateError } = await supabase
                     .from('user_missions')
-                    .update({ status: 'pending' })
+                    .update({ 
+                        status: 'pending',
+                        completed_at: new Date().toISOString()
+                    })
                     .eq('user_id', userProfile.id)
                     .eq('mission_id', currentMission.id);
                 
@@ -1579,7 +1517,7 @@
                 
             } catch (error) {
                 console.error('Error submitting mission:', error);
-                showToast('Error submitting mission: ' + error.message, 'error');
+                showToast('Error submitting mission', 'error');
             }
         }
 
@@ -1595,6 +1533,7 @@
                     <div class="text-center py-8">
                         <i class="fas fa-trophy text-4xl text-gray-400 mb-3"></i>
                         <p class="text-gray-400">No leaderboard data yet</p>
+                        <p class="text-sm text-gray-500">Complete missions to earn coins!</p>
                     </div>
                 `;
                 return;
@@ -1758,7 +1697,7 @@
                 
             } catch (error) {
                 console.error('Error purchasing item:', error);
-                showToast('Error purchasing item: ' + error.message, 'error');
+                showToast('Error purchasing item', 'error');
             }
         }
 
@@ -1775,6 +1714,9 @@
                         <i class="fas fa-history text-4xl text-gray-400 mb-4"></i>
                         <h3 class="font-bold mb-2">No Activities Yet</h3>
                         <p class="text-gray-400">Complete missions to see your activities here!</p>
+                        <button onclick="showMissions()" class="secondary-btn px-4 py-2 mt-4">
+                            Start a Mission
+                        </button>
                     </div>
                 `;
                 return;
@@ -1966,8 +1908,8 @@
                 document.getElementById('signupForm').classList.add('hidden');
                 
                 // Clear forms
-                document.getElementById('loginEmail').value = '';
-                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginEmail').value = 'player1@hunt.com';
+                document.getElementById('loginPassword').value = 'demo123';
                 document.getElementById('signupName').value = '';
                 document.getElementById('signupEmail').value = '';
                 document.getElementById('signupPassword').value = '';
@@ -2033,50 +1975,47 @@
             }, 5000);
         }
 
-        // ============================
-        // MEDIA PREVIEW
-        // ============================
-        document.addEventListener('DOMContentLoaded', () => {
+        function setupMediaPreview() {
             const mediaInput = document.getElementById('mediaInput');
-            if (mediaInput) {
-                mediaInput.addEventListener('change', function(e) {
-                    const file = e.target.files[0];
-                    const preview = document.getElementById('mediaPreview');
-                    
-                    if (!file) return;
-                    
-                    preview.innerHTML = '';
-                    
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            preview.innerHTML = `
-                                <div class="relative">
-                                    <img src="${e.target.result}" alt="Preview" class="w-full h-48 object-cover rounded-lg">
-                                    <span class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                                        <i class="fas fa-image mr-1"></i>Image
-                                    </span>
-                                </div>
-                            `;
-                        };
-                        reader.readAsDataURL(file);
-                    } else if (file.type.startsWith('video/')) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            preview.innerHTML = `
-                                <div class="relative">
-                                    <video src="${e.target.result}" controls class="w-full h-48 object-cover rounded-lg"></video>
-                                    <span class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                                        <i class="fas fa-video mr-1"></i>Video
-                                    </span>
-                                </div>
-                            `;
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-        });
+            if (!mediaInput) return;
+            
+            mediaInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById('mediaPreview');
+                
+                if (!file) return;
+                
+                preview.innerHTML = '';
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `
+                            <div class="relative">
+                                <img src="${e.target.result}" alt="Preview" class="w-full h-48 object-cover rounded-lg">
+                                <span class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                                    <i class="fas fa-image mr-1"></i>Image
+                                </span>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type.startsWith('video/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `
+                            <div class="relative">
+                                <video src="${e.target.result}" controls class="w-full h-48 object-cover rounded-lg"></video>
+                                <span class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                                    <i class="fas fa-video mr-1"></i>Video
+                                </span>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
     </script>
 </body>
 </html>
