@@ -178,6 +178,13 @@
                 border-radius: 12px;
             }
         }
+        
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -193,7 +200,7 @@
             
             <!-- Login Form -->
             <div id="loginForm" class="glass-card p-8">
-                <div id="authError" class="hidden bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm"></div>
+                <div id="authError" class="hidden bg-red-500/20 border border-red500/30 text-red-300 p-4 rounded-xl mb-6 text-sm"></div>
                 
                 <h2 class="text-xl font-bold mb-6">Sign In to Play</h2>
                 <form id="loginFormElement" onsubmit="event.preventDefault(); handleLogin();">
@@ -206,7 +213,7 @@
                                 required 
                                 class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
                                 placeholder="player@example.com"
-                                value="player1@hunt.com"
+                                value="player@example.com"
                             >
                         </div>
                         
@@ -218,7 +225,7 @@
                                 required 
                                 class="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 focus:outline-none focus:border-white/30 transition-all duration-200 text-white placeholder-gray-500"
                                 placeholder="••••••••"
-                                value="demo123"
+                                value="password123"
                             >
                         </div>
                         
@@ -241,7 +248,7 @@
             
             <!-- Signup Form -->
             <div id="signupForm" class="glass-card p-8 hidden">
-                <div id="signupError" class="hidden bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm"></div>
+                <div id="signupError" class="hidden bg-red-500/20 border border-red500/30 text-red-300 p-4 rounded-xl mb-6 text-sm"></div>
                 
                 <h2 class="text-xl font-bold mb-6">Join the Adventure</h2>
                 <form id="signupFormElement" onsubmit="event.preventDefault(); handleSignup();">
@@ -781,7 +788,7 @@
             signupBtnSpinner.classList.remove('hidden');
             
             try {
-                // Sign up with email confirmation
+                // Sign up without email confirmation for testing
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
@@ -789,24 +796,26 @@
                         data: {
                             name: name,
                             team_name: team || null
-                        },
-                        emailRedirectTo: window.location.origin
+                        }
                     }
                 });
                 
                 if (error) throw error;
                 
                 console.log('Signup successful:', email);
+                currentUser = data.user;
                 
-                // Show success message
-                showToast('Account created! Please check your email to verify your account. 📧', 'success');
+                // Automatically sign in after signup
+                const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
                 
-                // Switch back to login form
-                setTimeout(() => {
-                    document.getElementById('loginEmail').value = email;
-                    document.getElementById('loginPassword').value = '';
-                    toggleAuthMode();
-                }, 2000);
+                if (loginError) throw loginError;
+                
+                await loadUserProfile();
+                showMainApp();
+                showToast('Account created successfully! Welcome! 🎉', 'success');
                 
             } catch (error) {
                 console.error('Signup error:', error);
@@ -833,9 +842,9 @@
             try {
                 // Get user profile from database
                 const { data: profile, error } = await supabase
-                    .from('users')
+                    .from('profiles')
                     .select('*')
-                    .eq('auth_uid', currentUser.id)
+                    .eq('id', currentUser.id)
                     .single();
                 
                 if (error) {
@@ -843,9 +852,9 @@
                     
                     // Create profile if it doesn't exist
                     const { data: newProfile, error: createError } = await supabase
-                        .from('users')
+                        .from('profiles')
                         .insert({
-                            auth_uid: currentUser.id,
+                            id: currentUser.id,
                             email: currentUser.email,
                             name: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
                             team_name: currentUser.user_metadata?.team_name || null,
@@ -954,7 +963,7 @@
         async function loadLeaderboard() {
             try {
                 const { data, error } = await supabase
-                    .from('users')
+                    .from('profiles')
                     .select('id, name, team_name, coins')
                     .order('coins', { ascending: false })
                     .limit(20);
@@ -1115,11 +1124,12 @@
                 // Add zone markers
                 zones.forEach(zone => {
                     try {
-                        let coords;
+                        let coords = defaultCoords;
+                        
                         if (zone.coordinates && typeof zone.coordinates === 'object') {
                             coords = zone.coordinates.coordinates || defaultCoords;
-                        } else {
-                            coords = defaultCoords;
+                        } else if (zone.latitude && zone.longitude) {
+                            coords = [zone.longitude, zone.latitude];
                         }
                         
                         new mapboxgl.Marker({ color: '#10b981' })
@@ -1470,6 +1480,11 @@
                 return;
             }
             
+            const submitBtn = document.getElementById('submitMissionBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+            
             try {
                 // Create submission record
                 const { data, error } = await supabase
@@ -1518,6 +1533,9 @@
             } catch (error) {
                 console.error('Error submitting mission:', error);
                 showToast('Error submitting mission', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             }
         }
 
@@ -1667,7 +1685,7 @@
                 
                 // Update user coins
                 const { error: userError } = await supabase
-                    .from('users')
+                    .from('profiles')
                     .update({ 
                         coins: userProfile.coins - item.price 
                     })
@@ -1908,8 +1926,8 @@
                 document.getElementById('signupForm').classList.add('hidden');
                 
                 // Clear forms
-                document.getElementById('loginEmail').value = 'player1@hunt.com';
-                document.getElementById('loginPassword').value = 'demo123';
+                document.getElementById('loginEmail').value = 'player@example.com';
+                document.getElementById('loginPassword').value = 'password123';
                 document.getElementById('signupName').value = '';
                 document.getElementById('signupEmail').value = '';
                 document.getElementById('signupPassword').value = '';
